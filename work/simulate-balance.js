@@ -14,27 +14,30 @@ const towers = {
 };
 
 const enemies = [
-  {name:"Antoid Platoon", hp:120,armor:.12,share:.18,extra:0,weakTo:"water",resists:"fire"},
-  {name:"Cruel Sethropod",hp:190,armor:.23,share:.14,extra:0,weakTo:"earth",resists:"light"},
-  {name:"Hill Giant",hp:310,armor:.18,share:.11,extra:210*3*.55,weakTo:"death",resists:"water"},
-  {name:"Riftwing",hp:145,armor:.08,share:.10,extra:52*2*.35,weakTo:"water",resists:"death"},
-  {name:"Stitch Leech",hp:85,armor:0,share:.12,extra:0,weakTo:"fire",resists:"earth"},
-  {name:"Legionnaire Alvar",hp:430,armor:.32,share:.06,extra:210*2*.55,weakTo:"earth",resists:"light"},
+  {name:"Antoid Platoon", hp:120,armor:.12,share:.18,extra:0,weakTo:"water",resists:"fire",magicResist:.10},
+  {name:"Cruel Sethropod",hp:190,armor:.23,share:.14,extra:0,weakTo:"earth",resists:"light",magicResist:.25},
+  {name:"Hill Giant",hp:310,armor:.18,share:.11,extra:210*3*.55,weakTo:"death",resists:"water",magicResist:.15},
+  {name:"Riftwing",hp:145,armor:.08,share:.10,extra:52*2*.35,weakTo:"water",resists:"death",magicResist:.35},
+  {name:"Stitch Leech",hp:85,armor:0,share:.12,extra:0,weakTo:"fire",resists:"earth",magicResist:0},
+  {name:"Legionnaire Alvar",hp:430,armor:.32,share:.06,extra:210*2*.55,weakTo:"earth",resists:"light",slowImmune:true,magicResist:1},
   {name:"Disintegrator",hp:210,armor:.16,share:.04,extra:52*3*.55,weakTo:"death",resists:"water"},
-  {name:"Chaos Agent",hp:52,armor:0,share:.03,extra:0,weakTo:"light",resists:"death"},
-  {name:"Forgotten One",hp:380,armor:.26,share:.07,extra:0,weakTo:"water",resists:"fire"},
-  {name:"Goblin Psychic",hp:175,armor:.06,share:.07,extra:70,weakTo:"death",resists:"earth"},
-  {name:"Soul Strangler",hp:105,armor:0,share:.04,extra:0,weakTo:"light",resists:"death"},
-  {name:"Supply Runner",hp:155,armor:.08,share:.04,extra:35,weakTo:"fire",resists:"water"}
+  {name:"Chaos Agent",hp:52,armor:0,share:.03,extra:0,weakTo:"light",resists:"death",slowImmune:true,magicResist:1},
+  {name:"Forgotten One",hp:380,armor:.26,share:.07,extra:0,weakTo:"water",resists:"fire",slowImmune:true,magicResist:1},
+  {name:"Goblin Psychic",hp:175,armor:.06,share:.07,extra:70,weakTo:"death",resists:"earth",magicResist:.50},
+  {name:"Soul Strangler",hp:105,armor:0,share:.04,extra:0,weakTo:"light",resists:"death",magicResist:.60},
+  {name:"Supply Runner",hp:155,armor:.08,share:.03,extra:35,weakTo:"fire",resists:"water"},
+  {name:"River Hellondale",hp:205,armor:.10,share:.01,extra:90,weakTo:"fire",resists:"water",magicResist:.45}
 ];
 
 const bossMatchups = [
-  {weakTo:"water",resists:"fire"},
+  {weakTo:"water",resists:"fire",slowImmune:true,extra:120*4*1.2},
   {weakTo:"earth",resists:"water"},
   {weakTo:"death",resists:"earth"},
-  {weakTo:"light",resists:"death"},
-  {weakTo:"light",resists:"earth"}
+  {weakTo:"light",resists:"death",slowImmune:true},
+  {weakTo:"light",resists:"earth",slowImmune:true}
 ];
+const bossHealth=[6200,4800,6000,7200,9500];
+const bossArmor=[.32,.29,.32,.36,.39];
 
 const strategies = {
   mixed:    {order:["earth","water","time","fire","light","death"],maxTowers:9},
@@ -59,8 +62,18 @@ function averageAffinity(type){
   return enemies.reduce((sum,e)=>sum+e.share*affinity(type,e),0);
 }
 
+function timeUtility(level,wave,boss,target,towerLevel){
+  if(boss)return target.slowImmune?.72:(.72+1.23*(1-(target.magicResist||0))*(1+(towerLevel-1)*.18));
+  const available=wave===1
+    ? [enemies[0],enemies[1],enemies[4]]
+    : enemies.slice(0,Math.min(enemies.length,3+wave+level));
+  const total=available.reduce((sum,e)=>sum+e.share,0);
+  const effectiveness=available.reduce((sum,e)=>sum+(e.slowImmune?0:e.share*(1-(e.magicResist||0))),0)/total;
+  return .72+1.23*effectiveness*(1+(towerLevel-1)*.18);
+}
+
 function waveDurability(level,wave,count){
-  const mult=1.02+(wave-1)*.20+level*.22;
+  const mult=1.02+(wave-1)*.205+level*.25;
   const available=wave===1
     ? [enemies[0],enemies[1],enemies[4]]
     : enemies.slice(0,Math.min(enemies.length,3+wave+level));
@@ -93,22 +106,27 @@ function simulate(name){
       const count=boss?1:9+wave*2+level;
       const target=boss?bossMatchups[level]:null;
       const durability=boss
-        ? (1450*(1+level*.72))/(1-(.25+level*.035))
+        ? (bossHealth[level]/(1-bossArmor[level]))+(target.extra||0)
         : waveDurability(level,wave,count);
       const lanePenalty=1-(lanes-1)*.08;
       const encounterSeconds=boss?34:30+level*2.5;
       const output=owned.reduce((sum,x)=>{
         const matchup=boss?affinity(x.id,target):averageAffinity(x.id);
-        return sum+towers[x.id].dps*towers[x.id].utility*matchup*(1+(x.level-1)*.52);
-      },0)*encounterSeconds*lanePenalty;
-      const ratio=Math.min(1,output/durability);
+        const utility=x.id==="time"?timeUtility(level,wave,boss,target,x.level):towers[x.id].utility;
+        // Range evolution improves lane coverage and time-on-target, but less
+        // than linearly because paths and tower pads overlap.
+        const rangeCoverage=1+(x.level-1)*.07;
+        return sum+towers[x.id].dps*utility*matchup*(1+(x.level-1)*.52)*rangeCoverage;
+      },0)*encounterSeconds*lanePenalty*(boss?1:Math.max(.95,1-Math.max(0,level-1)*.006));
+      const rawRatio=output/durability;
+      const ratio=Math.min(1,rawRatio);
       const leaks=boss?(ratio<.78?8:0):Math.ceil(count*Math.max(0,1-ratio)*.72);
       lives-=leaks;
       const earned=boss
         ? (ratio>=.78?240+level*80:0)
         : Math.round(count*(14+level*1.5)*ratio)+(35+wave*8);
       shards+=earned;
-      results.push({level:level+1,wave,lanes,towers:owned.length,lives,ratio:+ratio.toFixed(2)});
+      results.push({level:level+1,wave,lanes,towers:owned.length,lives,ratio:+ratio.toFixed(2),rawRatio:+rawRatio.toFixed(2)});
       if(lives<=0)return {name,cleared:false,results};
     }
     shards+=180+level*50;lives=Math.min(22,lives+7);
@@ -121,7 +139,8 @@ for(const name of Object.keys(strategies)){
   const run=simulate(name),last=run.results.at(-1),solo=name.startsWith("solo");
   const expected=solo?!run.cleared:run.cleared&&last.lives>=3&&last.lives<=15;
   passed&&=expected;
-  console.log(`${name.padEnd(10)} cleared=${String(run.cleared).padEnd(5)} end=L${last.level}W${last.wave} core=${String(last.lives).padStart(3)} towers=${last.towers} ${expected?"PASS":"FAIL"}`);
+  const yodin=run.results.find(x=>x.level===1&&x.wave===5);
+  console.log(`${name.padEnd(10)} cleared=${String(run.cleared).padEnd(5)} end=L${last.level}W${last.wave} core=${String(last.lives).padStart(3)} Yodin=${yodin?.rawRatio??"-"} towers=${last.towers} ${expected?"PASS":"FAIL"}`);
 }
 console.log(`\nBALANCE SUITE: ${passed?"PASS":"FAIL"}`);
 process.exitCode=passed?0:1;

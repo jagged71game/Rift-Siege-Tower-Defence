@@ -43,9 +43,16 @@ h1 { font-size: 23px; letter-spacing: .05em; }
 .coin { color: var(--gold); } .heart { color: #e85d61; } .wave-icon { color: #78d7ed; }
 .resource.core-hit { animation: coreHit .48s ease; }
 .resource.core-hit .heart, .resource.core-hit b { color: #ff4c54; text-shadow: 0 0 14px #ff313b; }
+.resource.energy-gain { animation: energyGain .42s ease; }
+.resource.energy-gain .coin, .resource.energy-gain b { color: #ffd86c; text-shadow: 0 0 14px #eeb437; }
 @keyframes coreHit {
   0% { transform: scale(1); background: rgba(255,255,255,.025); }
   35% { transform: scale(1.12); background: rgba(217,44,52,.3); border-color: #ec5960; }
+  100% { transform: scale(1); background: rgba(255,255,255,.025); }
+}
+@keyframes energyGain {
+  0% { transform: scale(1); background: rgba(255,255,255,.025); }
+  40% { transform: scale(1.08); background: rgba(218,161,48,.22); border-color: #e4b34f; }
   100% { transform: scale(1); background: rgba(255,255,255,.025); }
 }
 .speed-btn {
@@ -328,7 +335,7 @@ main.side-collapsed .side-toggle {
 }
 .dossier-matchups b { padding: 11px 13px; border: 1px solid currentColor; background: rgba(255,255,255,.025); }
 .dossier-weak { color: #70d99b; }.dossier-resist { color: #ef7770; }
-.dossier-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
+.dossier-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; padding-top: 18px; border-top: 1px solid var(--line); }
 .dossier-stats span { color: #81898e; font-size: 9px; letter-spacing: .1em; }
 .dossier-stats b { display: block; margin-top: 5px; color: #e9dfca; font-size: 18px; }
 .codex p:not(.eyebrow) { margin: 10px 0; color: #aaa397; font-size: 9px; }

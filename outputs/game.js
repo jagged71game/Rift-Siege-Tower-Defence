@@ -15,7 +15,7 @@ const ui = {
   enemyRoster: $("enemyRoster"), dossierImage: $("dossierImage"), dossierTrait: $("dossierTrait"),
   dossierName: $("dossierName"), dossierSpecial: $("dossierSpecial"), dossierWeak: $("dossierWeak"),
   dossierResist: $("dossierResist"), dossierHp: $("dossierHp"), dossierArmor: $("dossierArmor"),
-  dossierSpeed: $("dossierSpeed"),
+  dossierMagic: $("dossierMagic"), dossierSpeed: $("dossierSpeed"),
   cards: $("towerCards"), levelList: $("levelList"), toast: $("toast"), modal: $("modal"),
   play: $("playBtn"), bossBar: $("bossBar"), bossName: $("bossName"), bossHp: $("bossHp"),
   bossHpText: $("bossHpText"), enemyPreview: $("enemyPreview"),
@@ -32,7 +32,7 @@ const TOWER_TYPES = [
   { id:"earth", name:"Mycelic Slipspawn", icon:"♠", art:"assets/mycelic-slipspawn.png", cost:130, color:"#8fd167", glow:"rgba(80,170,70,.18)", damage:22, range:155, rate:.78, shot:560, desc:"Magic · Chain", detail:"Fast magic ignores armor, then chains to two nearby enemies for 58% and 46% damage.", strong:"armored", weak:"swift", magic:true, chain:2 },
   { id:"death", name:"Cursed Windeku", icon:"☠", art:"assets/cursed-windeku.png", cost:120, color:"#bd72dc", glow:"rgba(170,70,210,.20)", damage:15, range:125, rate:.88, shot:560, desc:"Thorns · Armor Curse", detail:"Curses armor for 3s. Enemies passing close trigger a 10-damage thorn burst.", strong:"melee", weak:"ethereal", curse:.25, thorns:10 },
   { id:"light", name:"Pelacor Arbalest", icon:"✦", art:"assets/pelacor-arbalest.png", cost:115, color:"#f1d96d", glow:"rgba(230,200,80,.18)", damage:11, range:126, rate:.82, shot:700, desc:"Double Strike", detail:"Fires twice per attack. The second bolt lands shortly after the first for 82% damage.", strong:"ethereal", weak:"armored", doubleStrike:true },
-  { id:"time", element:"life", name:"Time Mage", icon:"⌛", art:"assets/time-mage.png", cost:100, color:"#8ce8ff", glow:"rgba(80,205,240,.22)", damage:8, range:138, rate:.58, shot:650, desc:"Slow · Time Snare", detail:"Every hit slows movement by 40% for 2.2s, buying the entire defence more attack time.", strong:"swift", weak:"armored", slow:.6, slowDuration:2.2 }
+  { id:"time", element:"life", name:"Time Mage", icon:"⌛", art:"assets/time-mage.png", cost:100, color:"#8ce8ff", glow:"rgba(80,205,240,.22)", damage:8, range:138, rate:.58, shot:650, desc:"Slow · Time Snare", detail:"Time Snare evolves from 40% slow for 2.2s to 60% for 3.2s. Enemy Magic Resistance reduces both strength and duration.", strong:"swift", weak:"magic-resistant", slow:.6, slowDuration:2.2 }
 ];
 
 const CARD_IMAGES = {};
@@ -43,18 +43,19 @@ TOWER_TYPES.forEach(t => {
 });
 
 const ENEMY_TYPES = [
-  {name:"Antoid Platoon",art:"assets/antoid-platoon.png",hp:120,speed:49,radius:14,reward:15,armor:.12,lavaImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#c96843"},
-  {name:"Cruel Sethropod",art:"assets/cruel-sethropod.png",hp:190,speed:36,radius:17,reward:20,armor:.23,trait:"armored",weakTo:"earth",resists:"light",color:"#458fae"},
-  {name:"Hill Giant",art:"assets/hill-giant.png",hp:310,speed:28,radius:21,reward:28,armor:.18,trait:"melee",weakTo:"death",resists:"water",color:"#7e9b51",splitInto:"Disintegrator"},
-  {name:"Riftwing",art:"assets/riftwing.png",hp:145,speed:45,radius:15,reward:20,armor:.08,trait:"flying",weakTo:"water",resists:"death",color:"#7b588f",spawnType:"Chaos Agent",spawnCount:2},
-  {name:"Stitch Leech",art:"assets/stitch-leech.png",hp:85,speed:78,radius:12,reward:14,armor:0,trait:"swift",weakTo:"fire",resists:"earth",color:"#d4b75d"},
-  {name:"Legionnaire Alvar",art:"assets/legionnaire-alvar.png",hp:430,speed:25,radius:23,reward:36,armor:.32,trait:"armored",weakTo:"earth",resists:"light",color:"#a68e6e",splitInto:"Disintegrator"},
+  {name:"Antoid Platoon",art:"assets/antoid-platoon.png",hp:120,speed:49,radius:14,reward:15,armor:.12,magicResist:.10,lavaImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#c96843"},
+  {name:"Cruel Sethropod",art:"assets/cruel-sethropod.png",hp:190,speed:36,radius:17,reward:20,armor:.23,magicResist:.25,trait:"armored",weakTo:"earth",resists:"light",color:"#458fae"},
+  {name:"Hill Giant",art:"assets/hill-giant.png",hp:310,speed:28,radius:21,reward:28,armor:.18,magicResist:.15,trait:"melee",weakTo:"death",resists:"water",color:"#7e9b51",splitInto:"Disintegrator"},
+  {name:"Riftwing",art:"assets/riftwing.png",hp:145,speed:45,radius:15,reward:20,armor:.08,magicResist:.35,trait:"flying",weakTo:"water",resists:"death",color:"#7b588f",spawnType:"Chaos Agent",spawnCount:2},
+  {name:"Stitch Leech",art:"assets/stitch-leech.png",hp:85,speed:78,radius:12,reward:14,armor:0,magicResist:0,trait:"swift",weakTo:"fire",resists:"earth",color:"#d4b75d"},
+  {name:"Legionnaire Alvar",art:"assets/legionnaire-alvar.png",hp:430,speed:25,radius:23,reward:36,armor:.32,slowImmune:true,trait:"armored",weakTo:"earth",resists:"light",color:"#a68e6e",splitInto:"Disintegrator"},
   {name:"Disintegrator",art:"assets/disintegrator.png",hp:210,speed:38,radius:17,reward:18,armor:.16,trait:"melee",weakTo:"death",resists:"water",color:"#847e80",splitInto:"Chaos Agent"},
-  {name:"Chaos Agent",art:"assets/chaos-agent.png",hp:52,speed:88,radius:10,reward:8,armor:0,trait:"ethereal",weakTo:"light",resists:"death",color:"#6c687d"},
-  {name:"Forgotten One",art:"assets/forgotten-one.png",hp:380,speed:27,radius:22,reward:32,armor:.26,lavaImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#d35e39"},
-  {name:"Goblin Psychic",art:"assets/goblin-psychic.png",hp:175,speed:38,radius:15,reward:23,armor:.06,trait:"regenerator",weakTo:"death",resists:"earth",regen:5,color:"#6fbd53"},
-  {name:"Soul Strangler",art:"assets/soul-strangler.png",hp:105,speed:73,radius:12,reward:18,armor:0,trait:"ethereal",weakTo:"light",resists:"death",color:"#7d4d8d"},
-  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:58,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.16,color:"#a68b70"}
+  {name:"Chaos Agent",art:"assets/chaos-agent.png",hp:52,speed:88,radius:10,reward:8,armor:0,slowImmune:true,trait:"ethereal",weakTo:"light",resists:"death",color:"#6c687d"},
+  {name:"Forgotten One",art:"assets/forgotten-one.png",hp:380,speed:27,radius:22,reward:32,armor:.26,lavaImmune:true,slowImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#d35e39"},
+  {name:"Goblin Psychic",art:"assets/goblin-psychic.png",hp:175,speed:38,radius:15,reward:23,armor:.06,magicResist:.50,trait:"regenerator",weakTo:"death",resists:"earth",regen:5,color:"#6fbd53"},
+  {name:"Soul Strangler",art:"assets/soul-strangler.png",hp:105,speed:73,radius:12,reward:18,armor:0,magicResist:.60,trait:"ethereal",weakTo:"light",resists:"death",color:"#7d4d8d"},
+  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:58,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.16,color:"#a68b70"},
+  {name:"River Hellondale",art:"assets/frost-mage.png",hp:205,speed:35,radius:16,reward:28,armor:.10,magicResist:.45,trait:"frost mage",weakTo:"fire",resists:"water",freezeRange:175,freezeDuration:2.4,freezeRate:5.8,color:"#54b9df"}
 ];
 const YABA_PICKLE = {name:"Yaba's Pickle",art:"assets/yabas-pickle.png",hp:240,speed:46,radius:18,reward:35,armor:.12,trait:"special",weakTo:"death",resists:"water",heartReward:3,special:true,color:"#79d84f"};
 const ENEMY_SPECIALS = {
@@ -63,21 +64,22 @@ const ENEMY_SPECIALS = {
   "Hill Giant":"A heavy melee threat that fractures into several Disintegrators when defeated.",
   "Riftwing":"Releases fast Chaos Agents after losing enough health, multiplying the pressure on its current lane.",
   "Stitch Leech":"Low health but extreme speed. It exploits neglected lanes and resists slow Earth projectiles.",
-  "Legionnaire Alvar":"An elite armored shell that breaks into Disintegrators, creating a dangerous multi-stage assault.",
+  "Legionnaire Alvar":"An elite armored shell immune to Time Snare. It breaks into Disintegrators, creating a dangerous multi-stage assault.",
   "Disintegrator":"A melee construct that fractures again into Chaos Agents. Death curses and thorns punish it.",
-  "Chaos Agent":"Tiny, ethereal, and exceptionally fast. Life attacks purge it efficiently; Death damage is resisted."
-  ,"Forgotten One":"A fireproof armored brute. Immune to lava pools and highly resistant to Fire attacks."
+  "Chaos Agent":"Tiny, ethereal, exceptionally fast, and immune to Time Snare. Life attacks purge it efficiently."
+  ,"Forgotten One":"A fireproof armored brute immune to lava pools, Fire attacks, and Time Snare."
   ,"Goblin Psychic":"Regenerates 5 health each second while advancing. Death damage prevents its sustain from becoming overwhelming."
   ,"Soul Strangler":"A fast ethereal attacker. Life attacks are its natural counter; Death damage is resisted."
   ,"Supply Runner":"Accelerates nearby enemies by 16%. Eliminate the support unit before the whole lane surges."
+  ,"River Hellondale":"A Frost Mage that freezes the nearest tower for 2.4 seconds every 5.8 seconds. Fire attacks counter it."
   ,"Yaba's Pickle":"A rare Rift wanderer that may appear unexpectedly. Defeat it before it escapes to restore 3 Core."
 };
 const BOSS_SPECIALS = {
-  "Yodin Zaku":"Fire Element summoner. Resists Fire damage and demands Water attacks to break his siege.",
+  "Yodin Zaku":"Fire Element summoner immune to Time Snare. At 72% and 38% health he summons fireproof Antoid guards.",
   "The Kraken":"Armored Water guardian. Earth magic pierces its shell while Water attacks are resisted.",
   "Kron the Undying":"Relentless melee legend. Death curses punish him; Earth damage is resisted.",
-  "Harklaw":"Ethereal Death guardian. Life attacks purge his defenses while Death damage is resisted.",
-  "Chaos Dragon":"Final Dragon Element guardian. Resists Earth magic and tears open the Rift at 66% and 33% health, summoning Riftwings onto multiple lanes."
+  "Harklaw":"Ethereal Death guardian immune to Time Snare. Life attacks purge his defenses while Death damage is resisted.",
+  "Chaos Dragon":"Final Dragon Element guardian immune to Time Snare. It tears open the Rift at 66% and 33% health, summoning Riftwings."
 };
 const ENEMY_IMAGES = {};
 ENEMY_TYPES.forEach(t=>{const image=new Image();image.src=t.art;ENEMY_IMAGES[t.name]=image;});
@@ -103,7 +105,7 @@ const LEVELS = [
 
 const state = {
   started:false, level:0, wave:0, shards:320, lives:20, selectedType:null, selectedTower:null,
-  towers:[], enemies:[], projectiles:[], particles:[], areas:[], beams:[], waveActive:false, spawnQueue:[],
+  towers:[], enemies:[], projectiles:[], particles:[], areas:[], beams:[], floaters:[], waveActive:false, spawnQueue:[],
   spawnTimer:0, time:0, speed:1, completed:0, shake:0, hoveredPad:-1, sound:true, audio:null,
   paused:false, waveStartLives:20, flawlessStreak:0, waveEncounters:new Map(), discoveredEnemies:new Map()
 };
@@ -142,7 +144,7 @@ function showCardPreview(t,anchor,pointerType){
   ui.previewImage.src=t.art;ui.previewImage.alt=t.name;
   ui.previewSplinter.textContent=`${elementLabel(t.element||t.id)} ELEMENT`;
   ui.previewName.textContent=t.name;
-  ui.previewAbility.innerHTML=`<b>${t.desc}</b><br>${t.detail}<br><span class="attack-speed">Attack speed: ${(1/t.rate).toFixed(2)}/s · Interval: ${t.rate.toFixed(2)}s</span><br><span class="matchup strong">▲ Strong vs ${t.strong}</span> <span class="matchup weak">▼ Weak vs ${t.weak}</span>`;
+  ui.previewAbility.innerHTML=`<b>${t.desc}</b><br>${t.detail}<br><span class="attack-speed">At 1× speed: ${(1/t.rate).toFixed(2)} attacks/s · ${t.rate.toFixed(2)}s interval${state.speed>1?`<br>Current ${state.speed}× speed: ${((1/t.rate)*state.speed).toFixed(2)} attacks/s`:""}</span><br><span class="matchup strong">▲ Strong vs ${t.strong}</span> <span class="matchup weak">▼ Weak vs ${t.weak}</span>`;
   ui.previewCost.textContent=`✦ ${t.cost}`;
   ui.cardPreview.style.setProperty("--preview-color",t.color);
   ui.cardPreview.style.setProperty("--preview-glow",t.glow);
@@ -194,7 +196,9 @@ function selectBestiaryEnemy(enemy,button){
   ui.dossierName.textContent=enemy.name;
   ui.dossierSpecial.textContent=ENEMY_SPECIALS[enemy.name]||BOSS_SPECIALS[enemy.name]||"Legendary Rift guardian. Its elemental affinity changes the ideal tower composition for this boss fight.";
   ui.dossierWeak.textContent=elementLabel(enemy.weakTo);ui.dossierResist.textContent=elementLabel(enemy.resists);
-  ui.dossierHp.textContent=enemy.hp;ui.dossierArmor.textContent=`${Math.round(enemy.armor*100)}%`;ui.dossierSpeed.textContent=enemy.speed;
+  ui.dossierHp.textContent=enemy.hp;ui.dossierArmor.textContent=`${Math.round(enemy.armor*100)}%`;
+  ui.dossierMagic.textContent=enemy.slowImmune?"IMMUNE":`${Math.round((enemy.magicResist||0)*100)}%`;
+  ui.dossierSpeed.textContent=enemy.speed;
 }
 ui.bestiaryBtn.onclick=()=>{
   ui.bestiary.classList.add("visible");
@@ -239,11 +243,14 @@ function updateSelection(){
   const t=towerType(tw.type);
   ui.selectedIcon.textContent=t.icon; ui.selectedIcon.style.color=t.color;
   ui.selectedName.textContent=t.name; ui.selectedLevel.textContent=`EVOLUTION ${tw.level} / 3`;
-  ui.selectedAbility.textContent=t.detail;
   const stats=towerStats(tw);
+  ui.selectedAbility.textContent=tw.type==="time"
+    ? `Time Snare: ${Math.round((1-stats.slow)*100)}% slow for ${stats.slowDuration.toFixed(1)}s before enemy Magic Resistance.`
+    : t.detail;
   ui.statDamage.textContent=Math.round(stats.damage);
   ui.statRange.textContent=Math.round(stats.range);
-  ui.statRate.textContent=(1/(t.rate*(1-(tw.level-1)*.12))).toFixed(1)+"/s";
+  const baseRate=1/(t.rate*(1-(tw.level-1)*.12));
+  ui.statRate.textContent=state.speed===1?`${baseRate.toFixed(1)}/s`:`${baseRate.toFixed(1)}/s · ${Math.round(baseRate*state.speed*10)/10} NOW`;
   const cost=upgradeCost(tw); ui.upgradeCost.textContent=tw.level>=3?"MAX":`✦ ${cost}`;
   ui.upgrade.disabled=tw.level>=3||state.shards<cost;
   ui.sellValue.textContent=`✦ ${sellValue(tw)}`;
@@ -307,7 +314,9 @@ ui.sell.onclick=()=>{
     return;
   }
   ui.sell.dataset.confirm="";
-  state.shards+=sellValue(tw);state.towers=state.towers.filter(x=>x!==tw);state.selectedTower=null;burst(tw.x,tw.y,"#d2bc8b",12);updateSelection();updateUI();
+  const value=sellValue(tw);
+  state.shards+=value;state.towers=state.towers.filter(x=>x!==tw);state.selectedTower=null;
+  burst(tw.x,tw.y,"#d2bc8b",12);toast(`TOWER SOLD · +✦ ${value}`);updateSelection();updateUI();
 };
 const TARGET_MODES=["first","strong","weak","fast"];
 ui.target.onclick=()=>{
@@ -346,16 +355,18 @@ ui.start.onclick=beginWave;
 function makeEnemy(index,boss){
   const wave=state.wave, lev=state.level;
   if(boss){
-    const hp=1450*(1+lev*.72);
+    const bossHealth=[6200,4800,6000,7200,9500];
+    const bossArmor=[.32,.29,.32,.36,.39];
+    const hp=bossHealth[lev];
     const bossMatchups=[
-      {weakTo:"water",resists:"fire",trait:"fireproof"},
-      {weakTo:"earth",resists:"water",trait:"armored"},
-      {weakTo:"death",resists:"earth",trait:"melee"},
-      {weakTo:"light",resists:"death",trait:"ethereal"},
-      {weakTo:"light",resists:"earth",trait:"dragon"}
+      {weakTo:"water",resists:"fire",trait:"fireproof",slowImmune:true,magicResist:1,summonPhases:[.72,.38],summonType:"Antoid Platoon",summonCount:2},
+      {weakTo:"earth",resists:"water",trait:"armored",magicResist:.45},
+      {weakTo:"death",resists:"earth",trait:"melee",magicResist:.55},
+      {weakTo:"light",resists:"death",trait:"ethereal",slowImmune:true,magicResist:1},
+      {weakTo:"light",resists:"earth",trait:"dragon",slowImmune:true,magicResist:1}
     ][lev];
     return {x:-60,y:0,pathIndex:1,progress:0,hp,maxHp:hp,speed:34+lev*2,reward:240+lev*80,
-      radius:29,boss:true,name:LEVELS[lev].boss,icon:LEVELS[lev].bossIcon,armor:.25+lev*.035,
+      radius:29,boss:true,name:LEVELS[lev].boss,icon:LEVELS[lev].bossIcon,armor:bossArmor[lev],
       art:LEVELS[lev].bossArt,lane:0,...bossMatchups,dragonPhases:lev===4?[.66,.33]:[],
       slowUntil:0,slowFactor:1,curseUntil:0,poisonUntil:0,poisonDps:0};
   }
@@ -369,9 +380,10 @@ function makeEnemy(index,boss){
 function enemyFromType(d,mult=1,x=-30,y=0,pathIndex=1,lane=0){
   return {x,y,pathIndex,progress:0,hp:d.hp*mult,maxHp:d.hp*mult,speed:d.speed,radius:d.radius,
     reward:Math.round(d.reward*Math.max(1,mult*.72)),color:d.color,armor:d.armor||0,name:d.name,art:d.art,
-    lavaImmune:!!d.lavaImmune,trait:d.trait,weakTo:d.weakTo,resists:d.resists,
+    lavaImmune:!!d.lavaImmune,slowImmune:!!d.slowImmune,magicResist:d.magicResist||0,trait:d.trait,weakTo:d.weakTo,resists:d.resists,
     splitInto:d.splitInto||null,spawnType:d.spawnType||null,spawnCount:d.spawnCount||0,
-    regen:d.regen||0,speedAura:d.speedAura||0,heartReward:d.heartReward||0,special:!!d.special,
+    regen:d.regen||0,speedAura:d.speedAura||0,freezeRange:d.freezeRange||0,freezeDuration:d.freezeDuration||0,
+    freezeRate:d.freezeRate||0,heartReward:d.heartReward||0,special:!!d.special,
     boss:false,lane,slowUntil:0,slowFactor:1,curseUntil:0,poisonUntil:0,poisonDps:0,spawned:false};
 }
 
@@ -399,6 +411,14 @@ function damageCore(amount){
   sound("core");
 }
 
+function displayEnergyGain(amount){
+  ui.shards.textContent=Math.floor(state.shards);
+  const box=ui.shards.closest(".resource");
+  box.classList.remove("energy-gain");
+  void box.offsetWidth;
+  box.classList.add("energy-gain");
+}
+
 function initAudio(){
   if(state.audio)return;
   state.audio=new (window.AudioContext||window.webkitAudioContext)();
@@ -421,6 +441,20 @@ function sound(kind){
 function updateEnemy(e,dt){
   if(e.slowUntil<state.time)e.slowFactor=1;
   if(e.regen&&e.hp>0)e.hp=Math.min(e.maxHp,e.hp+e.regen*dt);
+  if(e.freezeRange){
+    e.freezeCooldown=(e.freezeCooldown??(1.2+Math.random()*1.5))-dt;
+    if(e.freezeCooldown<=0){
+      const targets=state.towers.filter(t=>dist(e,t)<=e.freezeRange);
+      if(targets.length){
+        targets.sort((a,b)=>dist(e,a)-dist(e,b));
+        const tower=targets[0];tower.frozenUntil=Math.max(tower.frozenUntil||0,state.time+e.freezeDuration);
+        state.beams.push({x1:e.x,y1:e.y,x2:tower.x,y2:tower.y-15,color:"#8be7ff",life:.35,max:.35});
+        burst(tower.x,tower.y-18,"#8be7ff",16);toast(`${e.name.toUpperCase()} FROZE ${towerType(tower.type).name.toUpperCase()}`);
+        sound("water");
+      }
+      e.freezeCooldown=e.freezeRate;
+    }
+  }
   if(e.poisonUntil>state.time){
     e.hp-=e.poisonDps*dt;
     if(e.hp<=0&&!e.dead){
@@ -432,6 +466,21 @@ function updateEnemy(e,dt){
     e.spawned=true;
     spawnChildren(e,e.spawnType,e.spawnCount||2,false);
     toast(`${e.name.toUpperCase()} RELEASED REINFORCEMENTS`);
+    sound("split");
+  }
+  if(e.boss&&e.summonPhases?.length&&e.hp/e.maxHp<=e.summonPhases[0]){
+    const threshold=e.summonPhases.shift();
+    const type=ENEMY_TYPES.find(unit=>unit.name===e.summonType);
+    for(let i=0;i<(e.summonCount||2);i++){
+      const child=enemyFromType(type,1.2+state.level*.15,e.x-20-i*13,e.y+(i-.5)*18,e.pathIndex,e.lane);
+      child.reward=Math.round(child.reward*.5);state.enemies.push(child);
+      if(!state.discoveredEnemies.has(child.name)){
+        const snapshot=encounterSnapshot(child);
+        state.waveEncounters.set(child.name,snapshot);state.discoveredEnemies.set(child.name,snapshot);
+      }
+    }
+    initBestiary();state.shake=8;burst(e.x,e.y,"#ff7a3e",18);
+    toast(`${e.name.toUpperCase()} SUMMONS FIREPROOF GUARDS · ${Math.round(threshold*100)}%`);
     sound("split");
   }
   if(e.boss&&e.dragonPhases?.length&&e.hp/e.maxHp<=e.dragonPhases[0]){
@@ -468,7 +517,12 @@ function updateEnemy(e,dt){
 
 function towerStats(tw){
   const t=towerType(tw.type), lm=1+(tw.level-1)*.52, aura=lifeAura(tw);
-  return {...t,damage:t.damage*lm*(1+aura),range:t.range*(1+(tw.level-1)*.20),rate:t.rate*(1-(tw.level-1)*.12),shot:t.shot};
+  const timeLevel=tw.type==="time"?tw.level-1:0;
+  const evolvedRange=t.range*(1+(tw.level-1)*.20);
+  const effectiveRange=evolvedRange*(t.snipe?1.32:1);
+  return {...t,damage:t.damage*lm*(1+aura),range:effectiveRange,rate:t.rate*(1-(tw.level-1)*.12),shot:t.shot,
+    slow:t.slow?Math.max(.4,t.slow-timeLevel*.10):0,
+    slowDuration:t.slowDuration?t.slowDuration+timeLevel*.5:0};
 }
 function lifeAura(tw){
   let boost=0;
@@ -478,6 +532,7 @@ function lifeAura(tw){
 function updateTower(tw,dt){
   tw.cooldown-=dt;
   const s=towerStats(tw);
+  if((tw.frozenUntil||0)>state.time)return;
   if(s.thorns){
     tw.thornCooldown=(tw.thornCooldown||0)-dt;
     const close=state.enemies.filter(e=>!e.dead&&!e.escaped&&dist(tw,e)<78);
@@ -494,7 +549,7 @@ function updateTower(tw,dt){
   }
   tw.thornPulse=Math.max(0,(tw.thornPulse||0)-dt);
   if(tw.cooldown>0)return;
-  let targets=state.enemies.filter(e=>!e.dead&&!e.escaped&&dist(tw,e)<=s.range*(s.snipe?1.32:1));
+  let targets=state.enemies.filter(e=>!e.dead&&!e.escaped&&dist(tw,e)<=s.range);
   if(!targets.length)return;
   const mode=tw.targetMode||(s.snipe?"weak":"first");
   if(mode==="strong")targets.sort((a,b)=>b.hp-a.hp);
@@ -515,7 +570,10 @@ function updateTower(tw,dt){
 function killEnemy(e,color){
   if(e.dead)return;
   if(e.splitInto)spawnChildren(e,e.splitInto,e.name==="Legionnaire Alvar"?2:3,true);
-  e.dead=true;state.shards+=e.reward;burst(e.x,e.y,e.boss?"#f3c85d":color,e.boss?35:10);
+  e.dead=true;state.shards+=e.reward;
+  displayEnergyGain(e.reward);
+  state.floaters.push({x:e.x,y:e.y-12,text:`+✦ ${e.reward}`,color:"#f3c85d",life:.9,max:.9});
+  burst(e.x,e.y,e.boss?"#f3c85d":color,e.boss?35:10);
   if(e.heartReward){
     state.lives=Math.min(22,state.lives+e.heartReward);ui.lives.textContent=state.lives;
     toast(`YABA'S PICKLE RESCUED · +${e.heartReward} ♥ CORE`);
@@ -548,7 +606,20 @@ function hitEnemy(p,e){
   const affinity=affinityMultiplier(p.type,e);
   e.hp-=p.damage*(1-armor)*affinity;
   if(p.poison){e.poisonDps=p.poison*affinity;e.poisonUntil=state.time+3;}
-  if(p.slow){e.slowFactor=p.slow;e.slowUntil=state.time+(p.slowDuration||2);}
+  if(p.slow){
+    if(e.slowImmune){
+      if((e.slowNoticeUntil||0)<state.time){
+        state.floaters.push({x:e.x,y:e.y-18,text:"TIME IMMUNE",color:"#9deaff",life:.75,max:.75});
+        e.slowNoticeUntil=state.time+1.5;
+      }
+    }else{
+      const resist=Math.max(0,Math.min(.9,e.magicResist||0));
+      const appliedStrength=(1-p.slow)*(1-resist);
+      e.slowFactor=1-appliedStrength;
+      e.slowUntil=state.time+(p.slowDuration||2)*(1-resist*.65);
+      state.floaters.push({x:e.x,y:e.y-18,text:`-${Math.round(appliedStrength*100)}% SPEED`,color:"#9deaff",life:.55,max:.55});
+    }
+  }
   if(p.type==="death")e.curseUntil=state.time+3;
   if(p.splash)state.enemies.forEach(o=>{
     if(o!==e&&!o.dead&&!o.lavaImmune&&dist(o,e)<p.splash){
@@ -659,7 +730,11 @@ canvas.addEventListener("click",e=>{
   state.towers.push(tw);state.selectedTower=tw;state.selectedType=null;burst(tw.x,tw.y,type.color,14);updateSelection();updateUI();
 });
 
-ui.speed.onclick=()=>{state.speed=state.speed===1?2:state.speed===2?3:1;ui.speed.textContent=state.speed+"×";};
+ui.speed.onclick=()=>{
+  state.speed=state.speed===1?2:state.speed===2?3:1;ui.speed.textContent=state.speed+"×";
+  if(state.selectedTower)updateSelection();
+  toast(state.speed===1?"NORMAL TIME · ADVERTISED ATTACK RATES":`${state.speed}× TIME · ALL COMBAT RUNS ${state.speed}× FASTER`);
+};
 ui.sound.onclick=()=>{state.sound=!state.sound;ui.sound.textContent=state.sound?"♫":"♩";ui.sound.style.opacity=state.sound?1:.45;if(state.sound)sound("wave");};
 ui.pause.onclick=()=>{
   if(!state.started)return;
@@ -738,6 +813,7 @@ function drawPad(x,y,i){
 }
 function drawTower(tw){
   const t=towerType(tw.type), selected=state.selectedTower===tw,s=towerStats(tw);
+  const frozen=(tw.frozenUntil||0)>state.time;
   if(selected){ctx.beginPath();ctx.arc(tw.x,tw.y,s.range,0,Math.PI*2);ctx.fillStyle=t.glow;ctx.fill();ctx.strokeStyle=t.color+"66";ctx.stroke();}
   ctx.save();ctx.translate(tw.x,tw.y);
   // Dimensional stone plinth.
@@ -761,6 +837,12 @@ function drawTower(tw){
     const r=36+(1-tw.thornPulse/.4)*34;ctx.strokeStyle=`rgba(207,112,229,${tw.thornPulse/.4})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(tw.x,tw.y-8,r,0,Math.PI*2);ctx.stroke();
   }
   for(let i=0;i<tw.level;i++){ctx.fillStyle="#f2ce67";ctx.beginPath();ctx.arc(tw.x+(i-(tw.level-1)/2)*8,tw.y+45,2.5,0,Math.PI*2);ctx.fill();}
+  if(frozen){
+    const remain=tw.frozenUntil-state.time;
+    ctx.save();ctx.globalAlpha=.58;ctx.fillStyle="#75dcff";ctx.strokeStyle="#d5f7ff";ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(tw.x-31,tw.y+20);ctx.lineTo(tw.x-25,tw.y-55);ctx.lineTo(tw.x+22,tw.y-62);ctx.lineTo(tw.x+32,tw.y+18);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.globalAlpha=1;ctx.fillStyle="#e8fbff";ctx.font="bold 9px Inter";ctx.textAlign="center";ctx.fillText(`FROZEN ${remain.toFixed(1)}s`,tw.x,tw.y-68);ctx.restore();
+  }
 }
 function drawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
@@ -778,7 +860,9 @@ function drawEnemy(e){
   if(e.lavaImmune){ctx.strokeStyle="#ffb24b";ctx.lineWidth=2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.roundRect(-portraitW/2-3,-portraitH/2-3,portraitW+6,portraitH+6,e.radius*.55);ctx.stroke();ctx.setLineDash([]);}
   if(e.splitInto){ctx.fillStyle="#f4d66f";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("◇",portraitW/2,-portraitH/2);}
   if(e.spawnType){ctx.fillStyle="#85e2d5";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("✣",-portraitW/2,-portraitH/2);}
+  if(e.freezeRange){ctx.fillStyle="#9deaff";ctx.font="bold 11px serif";ctx.textAlign="center";ctx.fillText("❄",0,-portraitH/2-14);}
   if(e.heartReward){ctx.fillStyle="#ff7786";ctx.font="bold 12px serif";ctx.textAlign="center";ctx.fillText("♥",0,-portraitH/2-14);}
+  if(e.slowImmune){ctx.fillStyle="#9deaff";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("⌛̸",0,portraitH/2+10);}
   ctx.font="bold 7px Inter";ctx.textAlign="center";
   ctx.fillStyle="#68d99a";ctx.fillRect(-portraitW/2,-portraitH/2-10,portraitW/2-1,9);
   ctx.fillStyle="#102118";ctx.fillText(`W:${(e.weakTo||"?")[0].toUpperCase()}`,-portraitW/4,-portraitH/2-3);
@@ -829,6 +913,11 @@ function drawBeam(b){
 function drawParticle(p){
   ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size);ctx.globalAlpha=1;
 }
+function drawFloater(f){
+  ctx.save();ctx.globalAlpha=Math.max(0,f.life/f.max);ctx.fillStyle=f.color;
+  ctx.strokeStyle="rgba(5,8,11,.85)";ctx.lineWidth=3;ctx.font="bold 12px Inter";ctx.textAlign="center";
+  ctx.strokeText(f.text,f.x,f.y);ctx.fillText(f.text,f.x,f.y);ctx.restore();
+}
 
 let last=performance.now();
 function loop(now){
@@ -841,11 +930,13 @@ function loop(now){
     state.projectiles.forEach(p=>updateProjectile(p,dt));
     state.areas.forEach(a=>updateArea(a,dt));
     state.beams.forEach(b=>b.life-=dt);
+    state.floaters.forEach(f=>{f.y-=22*dt;f.life-=dt;});
     state.particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.96;p.vy*=.96;p.life-=dt;});
     state.enemies=state.enemies.filter(e=>!e.dead&&!e.escaped);
     state.projectiles=state.projectiles.filter(p=>!p.dead);
     state.areas=state.areas.filter(a=>a.life>0);
     state.beams=state.beams.filter(b=>b.life>0);
+    state.floaters=state.floaters.filter(f=>f.life>0);
     state.particles=state.particles.filter(p=>p.life>0);
     completeWaveCheck();
     if(state.lives<=0){state.waveActive=false;showEnd(false);state.started=false;}
@@ -854,7 +945,7 @@ function loop(now){
   }
   ctx.save();
   if(state.shake>0){ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);state.shake*=.88;if(state.shake<.3)state.shake=0;}
-  drawMap();state.areas.forEach(drawArea);state.towers.forEach(drawTower);state.enemies.forEach(drawEnemy);state.beams.forEach(drawBeam);state.projectiles.forEach(drawProjectile);state.particles.forEach(drawParticle);ctx.restore();
+  drawMap();state.areas.forEach(drawArea);state.towers.forEach(drawTower);state.enemies.forEach(drawEnemy);state.beams.forEach(drawBeam);state.projectiles.forEach(drawProjectile);state.particles.forEach(drawParticle);state.floaters.forEach(drawFloater);ctx.restore();
   requestAnimationFrame(loop);
 }
 

@@ -82,6 +82,8 @@ The campaign is checked with a headless five-realm simulation covering mixed, co
 - **Cursed Windeku:** thorns and curses punish melee enemies; ethereal enemies resist death damage.
 - **Pelacor Arbalest:** double strikes purge ethereal enemies; armored enemies resist Life damage.
 - **Time Mage:** every hit slows enemies by 40% for 2.2 seconds, but deals modest direct damage.
+- Time Snare evolves to 50% for 2.7 seconds at level 2 and 60% for 3.2 seconds at level 3.
+- Enemy Magic Resistance reduces both the applied slow percentage and duration; the Bestiary displays each unit's resistance or immunity.
 
 Tower evolution now increases attack range by 20% per level as well as improving damage and attack rate. Selling requires a second confirmation to prevent accidental Dark Energy refunds while selecting towers.
 
@@ -89,7 +91,17 @@ Enemy portraits display `W:` for their elemental weakness and `R:` for their res
 
 Later campaign levels introduce Forgotten One, Goblin Psychic, Soul Strangler, and Supply Runner. These add fire immunity, regeneration, ethereal speed, and enemy speed auras.
 
+River Hellondale enters later campaigns as a Frost Mage. Every 5.8 seconds it freezes the nearest tower within 175 range for 2.4 seconds. Frozen towers cannot attack or trigger thorns; the ice shell displays the remaining duration.
+
 **Yaba's Pickle** has a 22% chance to wander into non-boss waves from wave two onward. Defeating this rare special enemy restores 3 Core.
+
+## Time immunity and boss tuning
+
+- Yodin Zaku, Harklaw, Chaos Dragon, Forgotten One, Legionnaire Alvar, and Chaos Agent are immune to Time Mage's slow.
+- Slow-immune units display a crossed hourglass and produce a `TIME IMMUNE` combat notice.
+- Yodin now summons two fireproof Antoid guards at 72% and 38% health.
+- Boss durability was increased to account for the additional time-on-target granted by evolved tower range.
+- The balance simulation now models range coverage, slow immunity, Yodin's guards, and individual boss armor.
 
 ## Rift Bestiary
 
