@@ -1,0 +1,47 @@
+{
+  "name": "splinterlands-rift-siege",
+  "version": "1.0.0",
+  "description": "A fan-made tower defence game inspired by Splinterlands.",
+  "main": "desktop/main.js",
+  "author": "Rift Siege Prototype",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "game.riftsiege.splinterlands",
+    "productName": "Splinterlands Rift Siege",
+    "electronDist": "node_modules/electron/dist",
+    "asar": true,
+    "files": [
+      "desktop/**/*",
+      "outputs/index.html",
+      "outputs/style.css",
+      "outputs/game.js",
+      "outputs/assets/**/*"
+    ],
+    "directories": {
+      "output": "outputs/desktop-release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "desktop/icon.ico",
+      "artifactName": "Splinterlands-Rift-Siege-${version}-Portable.${ext}"
+    },
+    "portable": {
+      "artifactName": "Splinterlands-Rift-Siege-${version}-Portable.${ext}"
+    }
+  }
+}

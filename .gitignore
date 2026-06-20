@@ -1,0 +1,20 @@
+# Development and packaging dependencies
+node_modules/
+work/*
+!work/simulate-balance.js
+
+# Generated desktop releases
+outputs/desktop-release/
+outputs/Splinterlands-Rift-Siege-Discord-Edition/
+outputs/Splinterlands-Rift-Siege-Windows-v1.0.0/
+outputs/*.zip
+
+# Local runtime data
+userdata/
+*.log
+
+# Editor and OS clutter
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

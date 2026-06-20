@@ -1,0 +1,117 @@
+// Rift Siege campaign balance model.
+// Acceptance goals:
+// 1. Diverse, sensible armies clear with meaningful Core pressure.
+// 2. A player using only one placed character cannot clear the campaign.
+// 3. Matchup-aware builds outperform badly matched mono builds.
+
+const towers = {
+  fire:  {cost:90,  dps:18/.78,             utility:1.00},
+  water: {cost:105, dps:13/.68+8*.55,       utility:1.18},
+  earth: {cost:130, dps:(31+31*.58+31*.46)/1.12, utility:1.12},
+  death: {cost:120, dps:15/.88+10/.95,      utility:1.16},
+  light: {cost:115, dps:(11+11*.82)/.82,    utility:1.08}
+};
+
+const enemies = [
+  {name:"Antoid Platoon", hp:120,armor:.12,share:.23,extra:0,weakTo:"water",resists:"fire"},
+  {name:"Cruel Sethropod",hp:190,armor:.23,share:.18,extra:0,weakTo:"earth",resists:"light"},
+  {name:"Hill Giant",hp:310,armor:.18,share:.14,extra:210*3*.55,weakTo:"death",resists:"water"},
+  {name:"Riftwing",hp:145,armor:.08,share:.13,extra:52*2*.35,weakTo:"water",resists:"death"},
+  {name:"Stitch Leech",hp:85,armor:0,share:.16,extra:0,weakTo:"fire",resists:"earth"},
+  {name:"Legionnaire Alvar",hp:430,armor:.32,share:.07,extra:210*2*.55,weakTo:"earth",resists:"light"},
+  {name:"Disintegrator",hp:210,armor:.16,share:.05,extra:52*3*.55,weakTo:"death",resists:"water"},
+  {name:"Chaos Agent",hp:52,armor:0,share:.04,extra:0,weakTo:"light",resists:"death"}
+];
+
+const bossMatchups = [
+  {weakTo:"water",resists:"fire"},
+  {weakTo:"earth",resists:"water"},
+  {weakTo:"death",resists:"earth"},
+  {weakTo:"light",resists:"death"},
+  {weakTo:"light",resists:"earth"}
+];
+
+const strategies = {
+  mixed:    {order:["earth","water","fire","light","death"],maxTowers:9},
+  control:  {order:["water","earth","death","light","fire"],maxTowers:9},
+  damage:   {order:["earth","light","fire","water","death"],maxTowers:9},
+  fireHeavy:{order:["fire","fire","earth","light","water"],maxTowers:9},
+  soloFire: {order:["fire"],maxTowers:1},
+  soloWater:{order:["water"],maxTowers:1},
+  soloEarth:{order:["earth"],maxTowers:1},
+  soloDeath:{order:["death"],maxTowers:1},
+  soloLight:{order:["light"],maxTowers:1}
+};
+
+function affinity(type,target){
+  if(target.weakTo===type)return 1.38;
+  if(target.resists===type)return .62;
+  return 1;
+}
+
+function averageAffinity(type){
+  return enemies.reduce((sum,e)=>sum+e.share*affinity(type,e),0);
+}
+
+function waveDurability(level,wave,count){
+  const mult=1.02+(wave-1)*.20+level*.22;
+  return enemies.reduce((sum,e)=>sum+(e.hp/(1-e.armor)+e.extra)*e.share,0)*mult*count;
+}
+
+function simulate(name){
+  const strategy=strategies[name],results=[];
+  let shards=320,lives=20;
+  for(let level=0;level<5;level++){
+    const lanes=level<2?1:level<4?2:3;
+    const owned=[];
+    for(let wave=1;wave<=5+level;wave++){
+      while(true){
+        if(owned.length<strategy.maxTowers){
+          const id=strategy.order[owned.length%strategy.order.length],t=towers[id];
+          if(shards<t.cost)break;
+          shards-=t.cost;owned.push({id,level:1});
+        }else{
+          const target=owned.filter(x=>x.level<3).sort((a,b)=>a.level-b.level)[0];
+          if(!target)break;
+          const cost=Math.round(towers[target.id].cost*(.7+target.level*.45));
+          if(shards<cost)break;
+          shards-=cost;target.level++;
+        }
+      }
+
+      const boss=wave===5+level;
+      const count=boss?1:9+wave*2+level;
+      const target=boss?bossMatchups[level]:null;
+      const durability=boss
+        ? (1450*(1+level*.72))/(1-(.25+level*.035))
+        : waveDurability(level,wave,count);
+      const lanePenalty=1-(lanes-1)*.08;
+      const encounterSeconds=boss?34:30+level*2.5;
+      const output=owned.reduce((sum,x)=>{
+        const matchup=boss?affinity(x.id,target):averageAffinity(x.id);
+        return sum+towers[x.id].dps*towers[x.id].utility*matchup*(1+(x.level-1)*.52);
+      },0)*encounterSeconds*lanePenalty;
+      const ratio=Math.min(1,output/durability);
+      const leaks=boss?(ratio<.78?8:0):Math.ceil(count*Math.max(0,1-ratio)*.72);
+      lives-=leaks;
+      const earned=boss
+        ? (ratio>=.78?240+level*80:0)
+        : Math.round(count*(14+level*1.5)*ratio)+(35+wave*8);
+      shards+=earned;
+      results.push({level:level+1,wave,lanes,towers:owned.length,lives,ratio:+ratio.toFixed(2)});
+      if(lives<=0)return {name,cleared:false,results};
+    }
+    shards+=180+level*50;lives=Math.min(22,lives+7);
+  }
+  return {name,cleared:true,results};
+}
+
+let passed=true;
+for(const name of Object.keys(strategies)){
+  const run=simulate(name),last=run.results.at(-1),solo=name.startsWith("solo");
+  const expected=solo?!run.cleared:run.cleared&&last.lives>=3&&last.lives<=15;
+  passed&&=expected;
+  console.log(`${name.padEnd(10)} cleared=${String(run.cleared).padEnd(5)} end=L${last.level}W${last.wave} core=${String(last.lives).padStart(3)} towers=${last.towers} ${expected?"PASS":"FAIL"}`);
+}
+console.log(`\nBALANCE SUITE: ${passed?"PASS":"FAIL"}`);
+process.exitCode=passed?0:1;

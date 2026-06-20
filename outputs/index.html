@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Splinterlands: Rift Siege</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <div class="eyebrow">INSPIRED BY SPLINTERLANDS</div>
+          <h1>RIFT SIEGE</h1>
+        </div>
+      </div>
+      <div class="resources">
+        <div class="resource"><span class="coin">✦</span><b id="shards">0</b><small>DARK ENERGY</small></div>
+        <div class="resource"><span class="heart">♥</span><b id="lives">20</b><small>CORE</small></div>
+        <div class="resource"><span class="wave-icon">≋</span><b id="wave">0/0</b><small>WAVE</small></div>
+      </div>
+      <button id="soundBtn" class="speed-btn" title="Toggle sound">♫</button>
+      <button id="pauseBtn" class="speed-btn" title="Pause game">Ⅱ</button>
+      <button id="speedBtn" class="speed-btn">1×</button>
+      <button id="fullscreenBtn" class="speed-btn" title="Full screen">⛶</button>
+    </header>
+
+    <main>
+      <section class="game-shell">
+        <div class="level-strip">
+          <div>
+            <span class="level-tag" id="levelTag">LEVEL 1</span>
+            <h2 id="levelName">Ashen Pass</h2>
+          </div>
+          <div class="wave-progress"><i id="waveProgress"></i></div>
+          <button id="startWaveBtn" class="primary">BEGIN WAVE</button>
+        </div>
+
+        <div class="board-wrap">
+          <canvas id="gameCanvas" width="1100" height="620"></canvas>
+          <div class="pause-screen">RIFT PAUSED</div>
+          <div id="toast" class="toast"></div>
+          <div id="bossBar" class="boss-bar hidden">
+            <div><span id="bossName">BOSS</span><b id="bossHpText"></b></div>
+            <div class="boss-track"><i id="bossHp"></i></div>
+          </div>
+          <div id="modal" class="modal visible">
+            <div class="modal-card">
+              <div class="sigil">✦</div>
+              <p class="eyebrow">INSPIRED BY SPLINTERLANDS</p>
+              <h2>THE RIFTS HAVE OPENED</h2>
+              <p>Summon legendary Splinterlands monsters. Earn Dark Energy Crystals, level up your cards, and defend Praetoria through five realms and their legendary guardians.</p>
+              <div class="mini-rules">
+                <span><b>1</b> Select a card</span>
+                <span><b>2</b> Place on a rune</span>
+                <span><b>3</b> Upgrade & survive</span>
+              </div>
+              <button id="playBtn" class="primary large">ENTER THE SIEGE</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="summon-dock" id="commandConsole">
+          <div id="cardPreview" class="card-preview" aria-hidden="true">
+            <div class="preview-frame"><img id="previewImage" alt=""></div>
+            <div class="preview-meta">
+              <span id="previewSplinter"></span>
+              <b id="previewName"></b>
+              <small id="previewAbility"></small>
+              <em id="previewCost"></em>
+            </div>
+          </div>
+          <div class="cards" id="towerCards"></div>
+        </div>
+        <div id="towerPopover" class="tower-popover hidden">
+          <button id="popoverClose" class="popover-close" aria-label="Close tower controls">×</button>
+          <div class="selection-head">
+            <span id="selectedIcon"></span>
+            <div><b id="selectedName"></b><small id="selectedLevel"></small></div>
+          </div>
+          <div class="stats">
+            <span>DMG <b id="statDamage"></b></span>
+            <span>RANGE <b id="statRange"></b></span>
+            <span>RATE <b id="statRate"></b></span>
+          </div>
+          <div class="selection-actions">
+            <button id="upgradeBtn">EVOLVE <span id="upgradeCost"></span></button>
+            <button id="targetBtn" class="target-btn">TARGET <span id="targetMode">FIRST</span></button>
+            <button id="sellBtn" class="subtle">SELL <span id="sellValue"></span></button>
+          </div>
+        </div>
+      </section>
+
+      <button id="sideToggle" class="side-toggle" title="Hide campaign panel" aria-label="Hide campaign panel">›</button>
+      <aside class="side-panel" id="sidePanel">
+        <div class="realm-map">
+          <p class="eyebrow">CAMPAIGN</p>
+          <h3>THE RIFT ROAD</h3>
+          <div id="levelList"></div>
+        </div>
+        <div class="intel">
+          <p class="eyebrow">RIFT INTEL</p>
+          <div id="enemyPreview" class="enemy-preview">
+            <span>?</span>
+            <div><b>Scout the next wave</b><small>Enemy details appear here.</small></div>
+          </div>
+          <button id="bestiaryBtn" class="bestiary-open">OPEN ENEMY BESTIARY</button>
+        </div>
+        <div id="bestiary" class="bestiary">
+          <div class="bestiary-head">
+            <div><p class="eyebrow">ENEMY ARCHIVE</p><h3>RIFT BESTIARY</h3></div>
+            <button id="bestiaryClose" aria-label="Close bestiary">×</button>
+          </div>
+          <div id="enemyRoster" class="enemy-roster"></div>
+          <div id="bestiaryEmpty" class="bestiary-empty">
+            <span>◌</span>
+            <b>NO ENEMIES ENCOUNTERED</b>
+            <small>Enemy dossiers unlock permanently as new units enter the battlefield.</small>
+          </div>
+          <div id="enemyDossier" class="enemy-dossier">
+            <div class="dossier-card"><img id="dossierImage" alt=""></div>
+            <div class="dossier-copy">
+              <span id="dossierTrait"></span>
+              <h3 id="dossierName"></h3>
+              <p id="dossierSpecial"></p>
+              <div class="dossier-matchups">
+                <b class="dossier-weak">▲ WEAK TO <span id="dossierWeak"></span></b>
+                <b class="dossier-resist">▼ RESISTS <span id="dossierResist"></span></b>
+              </div>
+              <div class="dossier-stats">
+                <span>HEALTH <b id="dossierHp"></b></span>
+                <span>ARMOR <b id="dossierArmor"></b></span>
+                <span>SPEED <b id="dossierSpeed"></b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="codex">
+          <p class="eyebrow">BATTLE CODEX</p>
+          <p><i class="dot fire"></i>Fire crushes swift swarms · blocked by fireproof</p>
+          <p><i class="dot water"></i>Water hunts flying units · weak on melee brutes</p>
+          <p><i class="dot earth"></i>Earth pierces armor · struggles against swift units</p>
+          <p><i class="dot death"></i>Death punishes melee · resisted by ethereal units</p>
+          <p><i class="dot light"></i>Life purges ethereal · weak against armor</p>
+        </div>
+        <div class="inspired-credit">INSPIRED BY <b>SPLINTERLANDS</b><br><span>Fan-made tower defence prototype</span></div>
+      </aside>
+    </main>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
