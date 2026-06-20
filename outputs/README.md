@@ -81,8 +81,15 @@ The campaign is checked with a headless five-realm simulation covering mixed, co
 - **Mycelic Slipspawn:** magic pierces armored enemies; swift enemies resist earth magic.
 - **Cursed Windeku:** thorns and curses punish melee enemies; ethereal enemies resist death damage.
 - **Pelacor Arbalest:** double strikes purge ethereal enemies; armored enemies resist Life damage.
+- **Time Mage:** every hit slows enemies by 40% for 2.2 seconds, but deals modest direct damage.
+
+Tower evolution now increases attack range by 20% per level as well as improving damage and attack rate. Selling requires a second confirmation to prevent accidental Dark Energy refunds while selecting towers.
 
 Enemy portraits display `W:` for their elemental weakness and `R:` for their resistance. Bosses also have realm-specific matchups.
+
+Later campaign levels introduce Forgotten One, Goblin Psychic, Soul Strangler, and Supply Runner. These add fire immunity, regeneration, ethereal speed, and enemy speed auras.
+
+**Yaba's Pickle** has a 22% chance to wander into non-boss waves from wave two onward. Defeating this rare special enemy restores 3 Core.
 
 ## Rift Bestiary
 

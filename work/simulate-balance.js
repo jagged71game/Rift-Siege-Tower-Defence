@@ -5,22 +5,27 @@
 // 3. Matchup-aware builds outperform badly matched mono builds.
 
 const towers = {
-  fire:  {cost:90,  dps:18/.78,             utility:1.00},
+  fire:  {cost:90,  dps:25/1.05,            utility:1.00},
   water: {cost:105, dps:13/.68+8*.55,       utility:1.18},
-  earth: {cost:130, dps:(31+31*.58+31*.46)/1.12, utility:1.12},
+  earth: {cost:130, dps:(22+22*.58+22*.46)/.78, utility:1.12},
   death: {cost:120, dps:15/.88+10/.95,      utility:1.16},
-  light: {cost:115, dps:(11+11*.82)/.82,    utility:1.08}
+  light: {cost:115, dps:(11+11*.82)/.82,    utility:1.08},
+  time:  {cost:100, dps:8/.58,               utility:1.95}
 };
 
 const enemies = [
-  {name:"Antoid Platoon", hp:120,armor:.12,share:.23,extra:0,weakTo:"water",resists:"fire"},
-  {name:"Cruel Sethropod",hp:190,armor:.23,share:.18,extra:0,weakTo:"earth",resists:"light"},
-  {name:"Hill Giant",hp:310,armor:.18,share:.14,extra:210*3*.55,weakTo:"death",resists:"water"},
-  {name:"Riftwing",hp:145,armor:.08,share:.13,extra:52*2*.35,weakTo:"water",resists:"death"},
-  {name:"Stitch Leech",hp:85,armor:0,share:.16,extra:0,weakTo:"fire",resists:"earth"},
-  {name:"Legionnaire Alvar",hp:430,armor:.32,share:.07,extra:210*2*.55,weakTo:"earth",resists:"light"},
-  {name:"Disintegrator",hp:210,armor:.16,share:.05,extra:52*3*.55,weakTo:"death",resists:"water"},
-  {name:"Chaos Agent",hp:52,armor:0,share:.04,extra:0,weakTo:"light",resists:"death"}
+  {name:"Antoid Platoon", hp:120,armor:.12,share:.18,extra:0,weakTo:"water",resists:"fire"},
+  {name:"Cruel Sethropod",hp:190,armor:.23,share:.14,extra:0,weakTo:"earth",resists:"light"},
+  {name:"Hill Giant",hp:310,armor:.18,share:.11,extra:210*3*.55,weakTo:"death",resists:"water"},
+  {name:"Riftwing",hp:145,armor:.08,share:.10,extra:52*2*.35,weakTo:"water",resists:"death"},
+  {name:"Stitch Leech",hp:85,armor:0,share:.12,extra:0,weakTo:"fire",resists:"earth"},
+  {name:"Legionnaire Alvar",hp:430,armor:.32,share:.06,extra:210*2*.55,weakTo:"earth",resists:"light"},
+  {name:"Disintegrator",hp:210,armor:.16,share:.04,extra:52*3*.55,weakTo:"death",resists:"water"},
+  {name:"Chaos Agent",hp:52,armor:0,share:.03,extra:0,weakTo:"light",resists:"death"},
+  {name:"Forgotten One",hp:380,armor:.26,share:.07,extra:0,weakTo:"water",resists:"fire"},
+  {name:"Goblin Psychic",hp:175,armor:.06,share:.07,extra:70,weakTo:"death",resists:"earth"},
+  {name:"Soul Strangler",hp:105,armor:0,share:.04,extra:0,weakTo:"light",resists:"death"},
+  {name:"Supply Runner",hp:155,armor:.08,share:.04,extra:35,weakTo:"fire",resists:"water"}
 ];
 
 const bossMatchups = [
@@ -32,15 +37,16 @@ const bossMatchups = [
 ];
 
 const strategies = {
-  mixed:    {order:["earth","water","fire","light","death"],maxTowers:9},
-  control:  {order:["water","earth","death","light","fire"],maxTowers:9},
+  mixed:    {order:["earth","water","time","fire","light","death"],maxTowers:9},
+  control:  {order:["time","water","earth","death","light","fire"],maxTowers:9},
   damage:   {order:["earth","light","fire","water","death"],maxTowers:9},
   fireHeavy:{order:["fire","fire","earth","light","water"],maxTowers:9},
   soloFire: {order:["fire"],maxTowers:1},
   soloWater:{order:["water"],maxTowers:1},
   soloEarth:{order:["earth"],maxTowers:1},
   soloDeath:{order:["death"],maxTowers:1},
-  soloLight:{order:["light"],maxTowers:1}
+  soloLight:{order:["light"],maxTowers:1},
+  soloTime: {order:["time"],maxTowers:1}
 };
 
 function affinity(type,target){
@@ -55,7 +61,11 @@ function averageAffinity(type){
 
 function waveDurability(level,wave,count){
   const mult=1.02+(wave-1)*.20+level*.22;
-  return enemies.reduce((sum,e)=>sum+(e.hp/(1-e.armor)+e.extra)*e.share,0)*mult*count;
+  const available=wave===1
+    ? [enemies[0],enemies[1],enemies[4]]
+    : enemies.slice(0,Math.min(enemies.length,3+wave+level));
+  const totalShare=available.reduce((sum,e)=>sum+e.share,0);
+  return available.reduce((sum,e)=>sum+(e.hp/(1-e.armor)+e.extra)*(e.share/totalShare),0)*mult*count;
 }
 
 function simulate(name){

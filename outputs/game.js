@@ -20,18 +20,19 @@ const ui = {
   play: $("playBtn"), bossBar: $("bossBar"), bossName: $("bossName"), bossHp: $("bossHp"),
   bossHpText: $("bossHpText"), enemyPreview: $("enemyPreview"),
   towerPopover: $("towerPopover"), popoverClose: $("popoverClose"),
-  selectedIcon: $("selectedIcon"), selectedName: $("selectedName"),
+  selectedIcon: $("selectedIcon"), selectedName: $("selectedName"), selectedAbility: $("selectedAbility"),
   selectedLevel: $("selectedLevel"), statDamage: $("statDamage"), statRange: $("statRange"),
   statRate: $("statRate"), upgrade: $("upgradeBtn"), upgradeCost: $("upgradeCost"),
   target: $("targetBtn"), targetMode: $("targetMode"), sell: $("sellBtn"), sellValue: $("sellValue")
 };
 
 const TOWER_TYPES = [
-  { id:"fire", name:"Living Lava", icon:"♨", art:"assets/living-lava.png", cost:90, color:"#f06a45", glow:"rgba(240,80,40,.22)", damage:18, range:116, rate:.78, shot:500, desc:"Lava Area Splash", strong:"swarm", weak:"fireproof", splash:34, lavaArea:true },
-  { id:"water", name:"Deeplurker", icon:"◉", art:"assets/deeplurker.png", cost:105, color:"#50cbea", glow:"rgba(50,180,220,.20)", damage:13, range:150, rate:.68, shot:720, desc:"Snipe · Poison", strong:"flying", weak:"armored", poison:8, snipe:true },
-  { id:"earth", name:"Mycelic Slipspawn", icon:"♠", art:"assets/mycelic-slipspawn.png", cost:130, color:"#8fd167", glow:"rgba(80,170,70,.18)", damage:31, range:155, rate:1.12, shot:560, desc:"Magic · Chain", strong:"armored", weak:"swift", magic:true, chain:2 },
-  { id:"death", name:"Cursed Windeku", icon:"☠", art:"assets/cursed-windeku.png", cost:120, color:"#bd72dc", glow:"rgba(170,70,210,.20)", damage:15, range:125, rate:.88, shot:560, desc:"Thorns · Armor Curse", strong:"melee", weak:"ethereal", curse:.25, thorns:10 },
-  { id:"light", name:"Pelacor Arbalest", icon:"✦", art:"assets/pelacor-arbalest.png", cost:115, color:"#f1d96d", glow:"rgba(230,200,80,.18)", damage:11, range:126, rate:.82, shot:700, desc:"Double Strike", strong:"ethereal", weak:"armored", doubleStrike:true }
+  { id:"fire", name:"Living Lava", icon:"♨", art:"assets/living-lava.png", cost:90, color:"#f06a45", glow:"rgba(240,80,40,.22)", damage:25, range:116, rate:1.05, shot:500, desc:"Lava Area Splash", detail:"Slow, heavy attacks splash nearby enemies and leave a burning pool for 3.2s, dealing 34% attack damage per second.", strong:"swarm", weak:"fireproof", splash:34, lavaArea:true },
+  { id:"water", name:"Deeplurker", icon:"◉", art:"assets/deeplurker.png", cost:105, color:"#50cbea", glow:"rgba(50,180,220,.20)", damage:13, range:150, rate:.68, shot:720, desc:"Snipe · Poison", detail:"Prioritises wounded targets at extended range. Poison deals 8 damage per second for 3s.", strong:"flying", weak:"armored", poison:8, snipe:true },
+  { id:"earth", name:"Mycelic Slipspawn", icon:"♠", art:"assets/mycelic-slipspawn.png", cost:130, color:"#8fd167", glow:"rgba(80,170,70,.18)", damage:22, range:155, rate:.78, shot:560, desc:"Magic · Chain", detail:"Fast magic ignores armor, then chains to two nearby enemies for 58% and 46% damage.", strong:"armored", weak:"swift", magic:true, chain:2 },
+  { id:"death", name:"Cursed Windeku", icon:"☠", art:"assets/cursed-windeku.png", cost:120, color:"#bd72dc", glow:"rgba(170,70,210,.20)", damage:15, range:125, rate:.88, shot:560, desc:"Thorns · Armor Curse", detail:"Curses armor for 3s. Enemies passing close trigger a 10-damage thorn burst.", strong:"melee", weak:"ethereal", curse:.25, thorns:10 },
+  { id:"light", name:"Pelacor Arbalest", icon:"✦", art:"assets/pelacor-arbalest.png", cost:115, color:"#f1d96d", glow:"rgba(230,200,80,.18)", damage:11, range:126, rate:.82, shot:700, desc:"Double Strike", detail:"Fires twice per attack. The second bolt lands shortly after the first for 82% damage.", strong:"ethereal", weak:"armored", doubleStrike:true },
+  { id:"time", element:"life", name:"Time Mage", icon:"⌛", art:"assets/time-mage.png", cost:100, color:"#8ce8ff", glow:"rgba(80,205,240,.22)", damage:8, range:138, rate:.58, shot:650, desc:"Slow · Time Snare", detail:"Every hit slows movement by 40% for 2.2s, buying the entire defence more attack time.", strong:"swift", weak:"armored", slow:.6, slowDuration:2.2 }
 ];
 
 const CARD_IMAGES = {};
@@ -49,8 +50,13 @@ const ENEMY_TYPES = [
   {name:"Stitch Leech",art:"assets/stitch-leech.png",hp:85,speed:78,radius:12,reward:14,armor:0,trait:"swift",weakTo:"fire",resists:"earth",color:"#d4b75d"},
   {name:"Legionnaire Alvar",art:"assets/legionnaire-alvar.png",hp:430,speed:25,radius:23,reward:36,armor:.32,trait:"armored",weakTo:"earth",resists:"light",color:"#a68e6e",splitInto:"Disintegrator"},
   {name:"Disintegrator",art:"assets/disintegrator.png",hp:210,speed:38,radius:17,reward:18,armor:.16,trait:"melee",weakTo:"death",resists:"water",color:"#847e80",splitInto:"Chaos Agent"},
-  {name:"Chaos Agent",art:"assets/chaos-agent.png",hp:52,speed:88,radius:10,reward:8,armor:0,trait:"ethereal",weakTo:"light",resists:"death",color:"#6c687d"}
+  {name:"Chaos Agent",art:"assets/chaos-agent.png",hp:52,speed:88,radius:10,reward:8,armor:0,trait:"ethereal",weakTo:"light",resists:"death",color:"#6c687d"},
+  {name:"Forgotten One",art:"assets/forgotten-one.png",hp:380,speed:27,radius:22,reward:32,armor:.26,lavaImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#d35e39"},
+  {name:"Goblin Psychic",art:"assets/goblin-psychic.png",hp:175,speed:38,radius:15,reward:23,armor:.06,trait:"regenerator",weakTo:"death",resists:"earth",regen:5,color:"#6fbd53"},
+  {name:"Soul Strangler",art:"assets/soul-strangler.png",hp:105,speed:73,radius:12,reward:18,armor:0,trait:"ethereal",weakTo:"light",resists:"death",color:"#7d4d8d"},
+  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:58,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.16,color:"#a68b70"}
 ];
+const YABA_PICKLE = {name:"Yaba's Pickle",art:"assets/yabas-pickle.png",hp:240,speed:46,radius:18,reward:35,armor:.12,trait:"special",weakTo:"death",resists:"water",heartReward:3,special:true,color:"#79d84f"};
 const ENEMY_SPECIALS = {
   "Antoid Platoon":"Fireproof formation. Immune to Living Lava's burning pools and highly resistant to direct Fire damage.",
   "Cruel Sethropod":"A plated frontline creature built to absorb repeated physical volleys. Earth magic is its cleanest counter.",
@@ -60,6 +66,11 @@ const ENEMY_SPECIALS = {
   "Legionnaire Alvar":"An elite armored shell that breaks into Disintegrators, creating a dangerous multi-stage assault.",
   "Disintegrator":"A melee construct that fractures again into Chaos Agents. Death curses and thorns punish it.",
   "Chaos Agent":"Tiny, ethereal, and exceptionally fast. Life attacks purge it efficiently; Death damage is resisted."
+  ,"Forgotten One":"A fireproof armored brute. Immune to lava pools and highly resistant to Fire attacks."
+  ,"Goblin Psychic":"Regenerates 5 health each second while advancing. Death damage prevents its sustain from becoming overwhelming."
+  ,"Soul Strangler":"A fast ethereal attacker. Life attacks are its natural counter; Death damage is resisted."
+  ,"Supply Runner":"Accelerates nearby enemies by 16%. Eliminate the support unit before the whole lane surges."
+  ,"Yaba's Pickle":"A rare Rift wanderer that may appear unexpectedly. Defeat it before it escapes to restore 3 Core."
 };
 const BOSS_SPECIALS = {
   "Yodin Zaku":"Fire Element summoner. Resists Fire damage and demands Water attacks to break his siege.",
@@ -70,6 +81,7 @@ const BOSS_SPECIALS = {
 };
 const ENEMY_IMAGES = {};
 ENEMY_TYPES.forEach(t=>{const image=new Image();image.src=t.art;ENEMY_IMAGES[t.name]=image;});
+{const image=new Image();image.src=YABA_PICKLE.art;ENEMY_IMAGES[YABA_PICKLE.name]=image;}
 
 const LEVELS = [
   { name:"Mount Praetoria", realm:"Fire Element", tint:"#6b3527", path:[[0,310],[150,310],[150,150],[370,150],[370,420],[610,420],[610,240],[820,240],[820,430],[1100,430]], pads:[[85,205],[235,250],[285,75],[455,240],[500,510],[690,340],[720,150],[910,330],[970,510]], waves:5, boss:"Yodin Zaku", bossIcon:"♜", bossArt:"assets/yodin-zaku.png" },
@@ -100,6 +112,7 @@ function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
 function lerp(a,b,t){ return a+(b-a)*t; }
 function towerType(id){ return TOWER_TYPES.find(t=>t.id===id); }
 function elementLabel(id){ return id==="light"?"LIFE":String(id||"?").toUpperCase(); }
+function attackElement(tower){ return tower.element||tower.id; }
 function scaleX(){ return canvas.width / canvas.clientWidth; }
 function scaleY(){ return canvas.height / canvas.clientHeight; }
 function levelPaths(level=LEVELS[state.level]){ return level.lanes||[level.path]; }
@@ -111,8 +124,9 @@ function initCards(){
     const el=document.createElement("div");
     el.className="tower-card"; el.dataset.id=t.id;
     el.style.setProperty("--card",t.color); el.style.setProperty("--card-glow",t.glow); el.style.setProperty("--card-line",t.color+"88");
-    const elementName=elementLabel(t.id);
-    el.innerHTML=`<span class="card-cost">✦ ${t.cost}</span><div class="card-art"><img src="${t.art}" alt="${t.name}"></div><h4>${t.name}</h4><p>${t.desc}</p><div class="card-type">${elementName} ELEMENT</div>`;
+    const elementName=elementLabel(t.element||t.id);
+    el.title=`${t.name}: ${t.detail}`;
+    el.innerHTML=`<span class="card-cost">✦ ${t.cost}</span><span class="card-ability">${t.slow?"SLOW":t.poison?"POISON":t.lavaArea?"BURN":t.chain?"CHAIN":t.thorns?"THORNS":t.doubleStrike?"×2":"POWER"}</span><div class="card-art"><img src="${t.art}" alt="${t.name}"></div><h4>${t.name}</h4><p>${t.desc}</p><div class="card-type">${elementName} ELEMENT</div>`;
     el.onclick=()=>{ state.selectedTower=null; state.selectedType=state.selectedType===t.id?null:t.id; updateSelection(); updateUI(); };
     el.addEventListener("pointerenter",event=>showCardPreview(t,el,event.pointerType));
     el.addEventListener("pointerdown",event=>{if(event.pointerType==="touch")showCardPreview(t,el,"touch");});
@@ -126,9 +140,9 @@ function initCards(){
 
 function showCardPreview(t,anchor,pointerType){
   ui.previewImage.src=t.art;ui.previewImage.alt=t.name;
-  ui.previewSplinter.textContent=`${elementLabel(t.id)} ELEMENT`;
+  ui.previewSplinter.textContent=`${elementLabel(t.element||t.id)} ELEMENT`;
   ui.previewName.textContent=t.name;
-  ui.previewAbility.innerHTML=`${t.desc}<br><span class="matchup strong">▲ Strong vs ${t.strong}</span> <span class="matchup weak">▼ Weak vs ${t.weak}</span>`;
+  ui.previewAbility.innerHTML=`<b>${t.desc}</b><br>${t.detail}<br><span class="attack-speed">Attack speed: ${(1/t.rate).toFixed(2)}/s · Interval: ${t.rate.toFixed(2)}s</span><br><span class="matchup strong">▲ Strong vs ${t.strong}</span> <span class="matchup weak">▼ Weak vs ${t.weak}</span>`;
   ui.previewCost.textContent=`✦ ${t.cost}`;
   ui.cardPreview.style.setProperty("--preview-color",t.color);
   ui.cardPreview.style.setProperty("--preview-glow",t.glow);
@@ -221,11 +235,14 @@ function updateSelection(){
   const tw=state.selectedTower;
   ui.towerPopover.classList.toggle("hidden",!tw);
   if(!tw)return;
-  const t=towerType(tw.type), mult=1+(tw.level-1)*.52;
+  ui.sell.dataset.confirm="";ui.sell.firstChild.nodeValue="SELL ";
+  const t=towerType(tw.type);
   ui.selectedIcon.textContent=t.icon; ui.selectedIcon.style.color=t.color;
   ui.selectedName.textContent=t.name; ui.selectedLevel.textContent=`EVOLUTION ${tw.level} / 3`;
-  ui.statDamage.textContent=Math.round(t.damage*mult);
-  ui.statRange.textContent=Math.round(t.range*(1+(tw.level-1)*.08));
+  ui.selectedAbility.textContent=t.detail;
+  const stats=towerStats(tw);
+  ui.statDamage.textContent=Math.round(stats.damage);
+  ui.statRange.textContent=Math.round(stats.range);
   ui.statRate.textContent=(1/(t.rate*(1-(tw.level-1)*.12))).toFixed(1)+"/s";
   const cost=upgradeCost(tw); ui.upgradeCost.textContent=tw.level>=3?"MAX":`✦ ${cost}`;
   ui.upgrade.disabled=tw.level>=3||state.shards<cost;
@@ -274,10 +291,22 @@ function sellValue(tw){ return Math.round(towerType(tw.type).cost*(.58+(.45*(tw.
 ui.upgrade.onclick=()=>{
   const tw=state.selectedTower;if(!tw||tw.level>=3)return;
   const cost=upgradeCost(tw);if(state.shards<cost)return;
-  state.shards-=cost;tw.level++; burst(tw.x,tw.y,towerType(tw.type).color,18); toast("CHAMPION EVOLVED");updateSelection();updateUI();
+  const oldRange=Math.round(towerStats(tw).range);
+  state.shards-=cost;tw.level++;
+  const newRange=Math.round(towerStats(tw).range);
+  burst(tw.x,tw.y,towerType(tw.type).color,18);
+  toast(`CHAMPION EVOLVED · RANGE ${oldRange} → ${newRange}`);updateSelection();updateUI();
 };
 ui.sell.onclick=()=>{
   const tw=state.selectedTower;if(!tw)return;
+  if(performance.now()-(tw.selectedAt||0)<500)return;
+  if(ui.sell.dataset.confirm!=="yes"){
+    ui.sell.dataset.confirm="yes";ui.sell.firstChild.nodeValue="CONFIRM ";ui.sellValue.textContent=`+✦ ${sellValue(tw)}`;
+    clearTimeout(ui.sell.confirmTimer);
+    ui.sell.confirmTimer=setTimeout(()=>{ui.sell.dataset.confirm="";ui.sell.firstChild.nodeValue="SELL ";ui.sellValue.textContent=`✦ ${sellValue(tw)}`;},1800);
+    return;
+  }
+  ui.sell.dataset.confirm="";
   state.shards+=sellValue(tw);state.towers=state.towers.filter(x=>x!==tw);state.selectedTower=null;burst(tw.x,tw.y,"#d2bc8b",12);updateSelection();updateUI();
 };
 const TARGET_MODES=["first","strong","weak","fast"];
@@ -297,6 +326,11 @@ function beginWave(){
   const count=isBoss?1:9+state.wave*2+state.level;
   state.spawnQueue=[];
   for(let i=0;i<count;i++) state.spawnQueue.push(makeEnemy(i,isBoss));
+  if(!isBoss&&state.wave>=2&&Math.random()<.22){
+    const lane=Math.floor(Math.random()*levelPaths().length);
+    const pickle=enemyFromType(YABA_PICKLE,1+state.level*.18,-30,0,1,lane);
+    state.spawnQueue.splice(Math.floor(state.spawnQueue.length*(.35+Math.random()*.4)),0,pickle);
+  }
   state.spawnTimer=.2; ui.start.disabled=true;
   if(isBoss){
     const level=LEVELS[state.level], boss=state.spawnQueue[0];
@@ -337,6 +371,7 @@ function enemyFromType(d,mult=1,x=-30,y=0,pathIndex=1,lane=0){
     reward:Math.round(d.reward*Math.max(1,mult*.72)),color:d.color,armor:d.armor||0,name:d.name,art:d.art,
     lavaImmune:!!d.lavaImmune,trait:d.trait,weakTo:d.weakTo,resists:d.resists,
     splitInto:d.splitInto||null,spawnType:d.spawnType||null,spawnCount:d.spawnCount||0,
+    regen:d.regen||0,speedAura:d.speedAura||0,heartReward:d.heartReward||0,special:!!d.special,
     boss:false,lane,slowUntil:0,slowFactor:1,curseUntil:0,poisonUntil:0,poisonDps:0,spawned:false};
 }
 
@@ -349,6 +384,7 @@ function spawnEnemy(e){
     initBestiary();
     toast(`NEW ENEMY DISCOVERED: ${e.name.toUpperCase()}`);
   }
+  if(e.special)toast("A RARE YABA'S PICKLE HAS ENTERED THE RIFT!");
   if(e.boss){ui.bossBar.classList.remove("hidden");ui.bossName.textContent=e.name;}
 }
 
@@ -374,7 +410,7 @@ function sound(kind){
   const sounds={
     wave:["sawtooth",130,260,.35,.12],core:["square",110,48,.45,.18],fire:["sawtooth",105,58,.14,.055],
     water:["sine",680,310,.12,.035],earth:["sine",260,760,.22,.045],death:["triangle",190,82,.18,.04],
-    light:["square",520,740,.12,.025],split:["sawtooth",180,420,.24,.07],down:["triangle",130,70,.09,.025],
+    light:["square",520,740,.12,.025],time:["sine",760,320,.18,.035],split:["sawtooth",180,420,.24,.07],down:["triangle",130,70,.09,.025],
     bossDown:["sawtooth",220,44,.7,.12],flawless:["sine",420,880,.3,.055]
   };
   const s=sounds[kind]||sounds.down;osc.type=s[0];osc.frequency.setValueAtTime(s[1],now);osc.frequency.exponentialRampToValueAtTime(Math.max(30,s[2]),now+s[3]);
@@ -384,6 +420,7 @@ function sound(kind){
 
 function updateEnemy(e,dt){
   if(e.slowUntil<state.time)e.slowFactor=1;
+  if(e.regen&&e.hp>0)e.hp=Math.min(e.maxHp,e.hp+e.regen*dt);
   if(e.poisonUntil>state.time){
     e.hp-=e.poisonDps*dt;
     if(e.hp<=0&&!e.dead){
@@ -419,7 +456,8 @@ function updateEnemy(e,dt){
   const path=enemyPath(e), target=path[e.pathIndex];
   if(!target)return;
   const dx=target[0]-e.x,dy=target[1]-e.y,d=Math.hypot(dx,dy);
-  const move=e.speed*e.slowFactor*dt;
+  const supportBoost=state.enemies.some(o=>o!==e&&!o.dead&&o.speedAura&&dist(o,e)<105)?1.16:1;
+  const move=e.speed*e.slowFactor*supportBoost*dt;
   if(move>=d){
     e.x=target[0];e.y=target[1];e.pathIndex++;
     if(e.pathIndex>=path.length){
@@ -430,11 +468,11 @@ function updateEnemy(e,dt){
 
 function towerStats(tw){
   const t=towerType(tw.type), lm=1+(tw.level-1)*.52, aura=lifeAura(tw);
-  return {damage:t.damage*lm*(1+aura),range:t.range*(1+(tw.level-1)*.08),rate:t.rate*(1-(tw.level-1)*.12),shot:t.shot,...t};
+  return {...t,damage:t.damage*lm*(1+aura),range:t.range*(1+(tw.level-1)*.20),rate:t.rate*(1-(tw.level-1)*.12),shot:t.shot};
 }
 function lifeAura(tw){
   let boost=0;
-  state.towers.forEach(o=>{if(o!==tw&&o.type==="light"&&dist(o,tw)<120)boost=Math.max(boost,towerType("light").aura*o.level);});
+  state.towers.forEach(o=>{const aura=towerType(o.type).aura||0;if(o!==tw&&aura&&dist(o,tw)<120)boost=Math.max(boost,aura*o.level);});
   return boost;
 }
 function updateTower(tw,dt){
@@ -464,7 +502,7 @@ function updateTower(tw,dt){
   else if(mode==="fast")targets.sort((a,b)=>b.speed*b.slowFactor-a.speed*a.slowFactor);
   else targets.sort((a,b)=>b.pathIndex-a.pathIndex||b.x-a.x);
   const target=targets[0];tw.cooldown=s.rate;
-  const shot={x:tw.x,y:tw.y-18,target,damage:s.damage,speed:s.shot,color:s.color,type:tw.type,splash:s.splash||0,curse:s.curse||0,poison:s.poison||0,lavaArea:s.lavaArea||false,magic:s.magic||false,chain:s.chain||0};
+  const shot={x:tw.x,y:tw.y-18,target,damage:s.damage,speed:s.shot,color:s.color,type:attackElement(s),visualType:tw.type,splash:s.splash||0,curse:s.curse||0,poison:s.poison||0,slow:s.slow||0,slowDuration:s.slowDuration||0,lavaArea:s.lavaArea||false,magic:s.magic||false,chain:s.chain||0};
   state.projectiles.push(shot);
   if(s.doubleStrike){
     state.projectiles.push({...shot,x:tw.x-7,y:tw.y-13,damage:s.damage*.82,speed:s.shot*.9,delay:.11});
@@ -478,6 +516,10 @@ function killEnemy(e,color){
   if(e.dead)return;
   if(e.splitInto)spawnChildren(e,e.splitInto,e.name==="Legionnaire Alvar"?2:3,true);
   e.dead=true;state.shards+=e.reward;burst(e.x,e.y,e.boss?"#f3c85d":color,e.boss?35:10);
+  if(e.heartReward){
+    state.lives=Math.min(22,state.lives+e.heartReward);ui.lives.textContent=state.lives;
+    toast(`YABA'S PICKLE RESCUED · +${e.heartReward} ♥ CORE`);
+  }
   sound(e.boss?"bossDown":"down");
   if(e.boss){state.shake=20;ui.bossBar.classList.add("hidden");toast(`${e.name.toUpperCase()} DEFEATED`);}
 }
@@ -506,6 +548,7 @@ function hitEnemy(p,e){
   const affinity=affinityMultiplier(p.type,e);
   e.hp-=p.damage*(1-armor)*affinity;
   if(p.poison){e.poisonDps=p.poison*affinity;e.poisonUntil=state.time+3;}
+  if(p.slow){e.slowFactor=p.slow;e.slowUntil=state.time+(p.slowDuration||2);}
   if(p.type==="death")e.curseUntil=state.time+3;
   if(p.splash)state.enemies.forEach(o=>{
     if(o!==e&&!o.dead&&!o.lavaImmune&&dist(o,e)<p.splash){
@@ -606,7 +649,7 @@ canvas.addEventListener("click",e=>{
   if(!state.started)return;
   const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*scaleX(),y=(e.clientY-r.top)*scaleY();
   const clicked=state.towers.find(t=>Math.hypot(x-t.x,y-t.y)<36);
-  if(clicked){state.selectedTower=clicked;state.selectedType=null;updateSelection();updateUI();return;}
+  if(clicked){clicked.selectedAt=performance.now();state.selectedTower=clicked;state.selectedType=null;updateSelection();updateUI();return;}
   const padIndex=LEVELS[state.level].pads.findIndex(p=>Math.hypot(x-p[0],y-p[1])<30);
   if(padIndex<0||!state.selectedType){state.selectedTower=null;updateSelection();return;}
   if(state.towers.some(t=>t.pad===padIndex)){toast("THAT RUNE IS OCCUPIED");return;}
@@ -735,6 +778,7 @@ function drawEnemy(e){
   if(e.lavaImmune){ctx.strokeStyle="#ffb24b";ctx.lineWidth=2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.roundRect(-portraitW/2-3,-portraitH/2-3,portraitW+6,portraitH+6,e.radius*.55);ctx.stroke();ctx.setLineDash([]);}
   if(e.splitInto){ctx.fillStyle="#f4d66f";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("◇",portraitW/2,-portraitH/2);}
   if(e.spawnType){ctx.fillStyle="#85e2d5";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("✣",-portraitW/2,-portraitH/2);}
+  if(e.heartReward){ctx.fillStyle="#ff7786";ctx.font="bold 12px serif";ctx.textAlign="center";ctx.fillText("♥",0,-portraitH/2-14);}
   ctx.font="bold 7px Inter";ctx.textAlign="center";
   ctx.fillStyle="#68d99a";ctx.fillRect(-portraitW/2,-portraitH/2-10,portraitW/2-1,9);
   ctx.fillStyle="#102118";ctx.fillText(`W:${(e.weakTo||"?")[0].toUpperCase()}`,-portraitW/4,-portraitH/2-3);
@@ -751,15 +795,19 @@ function bossImage(e){
 }
 function drawProjectile(p){
   if(p.delay>0)return;
+  const visualType=p.visualType||p.type;
   ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle=p.color;ctx.strokeStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=14;
-  if(p.type==="fire"){
+  if(visualType==="fire"){
     ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();ctx.fillStyle="#ffd050";ctx.beginPath();ctx.arc(-2,-2,3,0,Math.PI*2);ctx.fill();
-  }else if(p.type==="water"){
+  }else if(visualType==="water"){
     ctx.rotate(Math.atan2(p.target.y-p.y,p.target.x-p.x));ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-7,-4);ctx.lineTo(-3,0);ctx.lineTo(-7,4);ctx.closePath();ctx.fill();
-  }else if(p.type==="earth"){
+  }else if(visualType==="earth"){
     ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,7+Math.sin(state.time*12)*2,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();
-  }else if(p.type==="death"){
+  }else if(visualType==="death"){
     ctx.rotate(Math.atan2(p.target.y-p.y,p.target.x-p.x));ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(-6,-5);ctx.lineTo(-2,0);ctx.lineTo(-6,5);ctx.closePath();ctx.fill();
+  }else if(visualType==="time"){
+    ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(0,-5);ctx.moveTo(0,0);ctx.lineTo(4,2);ctx.stroke();
   }else{
     ctx.rotate(Math.atan2(p.target.y-p.y,p.target.x-p.x));ctx.fillRect(-9,-2,18,4);ctx.fillStyle="#fff8c5";ctx.fillRect(1,-1,9,2);
   }

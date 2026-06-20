@@ -124,6 +124,7 @@ canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
 .matchup { display: inline-block; margin-top: 4px; font-weight: 800; }
 .matchup.strong { color: #70d99b; }
 .matchup.weak { color: #ef7770; }
+.attack-speed { display:inline-block; margin-top:4px; color:#76cde4; font-weight:700; }
 .preview-meta em {
   position: absolute; right: 4px; top: 7px; padding: 3px 5px; color: var(--gold);
   background: #080c11; border: 1px solid rgba(240,184,73,.25); font-style: normal; font-size: 9px; font-weight: 800;
@@ -147,6 +148,11 @@ canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
 .summon-dock .card-art img { height: 140%; }
 .summon-dock .tower-card h4, .summon-dock .tower-card p, .summon-dock .card-type { display: none; }
 .summon-dock .card-cost { right: 1px; top: 1px; padding: 2px 3px; font-size: 7px; }
+.card-ability {
+  position:absolute; z-index:2; left:2px; bottom:2px; padding:2px 3px;
+  color:#e9dfca; background:rgba(5,8,12,.88); border:1px solid rgba(255,255,255,.18);
+  font-size:5px; font-weight:900; letter-spacing:.06em;
+}
 .summon-dock .card-preview { bottom: calc(100% + 12px); }
 .tower-popover {
   position: absolute; z-index: 8; width: 230px; padding: 10px;
@@ -166,6 +172,7 @@ canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
 .tower-popover .selection-head > span { width:30px; height:30px; font-size:18px; }
 .tower-popover .selection-head b { font-size:12px; }
 .tower-popover .selection-head small { font-size:7px; }
+.selected-ability { margin:6px 0; color:#a9a294; font-size:7px; line-height:1.35; }
 .tower-popover .stats { margin:7px 0; }
 .tower-popover .stats b { font-size:10px; }
 .tower-popover .selection-actions button { font-size:8px; padding:6px 2px; }
@@ -181,6 +188,7 @@ canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
 .tower-popover.mobile-sheet .selection-head { width:32%; }
 .tower-popover.mobile-sheet .stats { width:30%; justify-content:center; }
 .tower-popover.mobile-sheet .selection-actions { width:36%; }
+.tower-popover.mobile-sheet .selected-ability { display:none; }
 .popover-close {
   position:absolute; right:5px; top:5px; width:22px; height:22px; padding:0;
   border:1px solid var(--line); background:#171f27; color:#b7ad9a;
@@ -329,6 +337,7 @@ main.side-collapsed .side-toggle {
 .inspired-credit span { letter-spacing: .04em; color: #625e56; }
 .dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; }
 .fire { background:#e96546 }.water { background:#48b9d8 }.earth { background:#84bd61 }.death { background:#b36bd0 }.light { background:#f0d76c }
+.time { background:#8ce8ff }
 .modal { position: absolute; inset: 0; display: none; place-items: center; background: rgba(5,8,11,.76); backdrop-filter: blur(3px); z-index: 5; }
 .modal.visible { display: grid; }
 .modal-card { max-width: 560px; padding: 30px 38px; text-align: center; border: 1px solid rgba(240,184,73,.45); background: linear-gradient(145deg, rgba(28,35,43,.98), rgba(12,17,22,.98)); box-shadow: 0 20px 80px #000; }
