@@ -112,7 +112,8 @@ const state = {
   towers:[], enemies:[], projectiles:[], particles:[], areas:[], beams:[], floaters:[], waveActive:false, spawnQueue:[],
   spawnTimer:0, time:0, speed:1, completed:0, shake:0, hoveredPad:-1, sound:true, audio:null,
   paused:false, waveStartLives:20, flawlessStreak:0, waveEncounters:new Map(), discoveredEnemies:new Map(),
-  camera:{zoom:1,panX:0,panY:0},touches:new Map(),gesture:null,suppressClickUntil:0
+  camera:{zoom:1,panX:0,panY:0},touches:new Map(),gesture:null,suppressClickUntil:0,
+  gameOver:false,levelTransitionTimer:null
 };
 
 function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
@@ -458,6 +459,7 @@ function damageCore(amount){
   box.classList.add("core-hit");
   toast(`CORE BREACHED  −${amount} ♥`);
   sound("core");
+  if(state.lives<=0)triggerDefeat();
 }
 
 function displayEnergyGain(amount){
@@ -749,11 +751,18 @@ function completeWaveCheck(){
   if(!state.waveActive||state.spawnQueue.length||state.enemies.some(e=>!e.dead&&!e.escaped))return;
   state.waveActive=false;
   syncBossBar();
+  if(state.lives<=0||state.gameOver){triggerDefeat();return;}
   const level=LEVELS[state.level];
   if(state.wave>=level.waves){
     state.completed=Math.max(state.completed,state.level+1);
     if(state.level===LEVELS.length-1){ showEnd(true); }
-    else setTimeout(()=>showLevelComplete(),700);
+    else {
+      clearTimeout(state.levelTransitionTimer);
+      state.levelTransitionTimer=setTimeout(()=>{
+        state.levelTransitionTimer=null;
+        if(!state.gameOver&&state.lives>0)showLevelComplete();
+      },700);
+    }
   }else{
     const baseBonus=35+state.wave*8;
     if(state.lives===state.waveStartLives){
@@ -771,15 +780,28 @@ function completeWaveCheck(){
 }
 
 function showLevelComplete(){
+  if(state.gameOver||state.lives<=0)return;
   ui.modal.classList.add("visible");
   ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">✓</div><p class="eyebrow">REALM SECURED</p><h2>${LEVELS[state.level].name}</h2><p>The rift guardian has fallen. Your surviving champions have been recalled, and the next battlefield awaits.</p><div class="mini-rules"><span>Clear bonus <b>✦</b> ${180+state.level*50}</span><span>Core restored <b>♥</b> +7</span></div><button id="nextLevel" class="primary large">TRAVEL TO ${LEVELS[state.level+1].name.toUpperCase()}</button></div>`;
-  $("nextLevel").onclick=()=>{state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.spawnQueue=[];state.selectedTower=null;state.selectedType=null;syncBossBar();resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();};
+  $("nextLevel").onclick=()=>{
+    if(state.gameOver||state.lives<=0){triggerDefeat();return;}
+    state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.spawnQueue=[];state.selectedTower=null;state.selectedType=null;syncBossBar();resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();
+  };
 }
 
 function showEnd(win){
+  if(!win)state.gameOver=true;
+  clearTimeout(state.levelTransitionTimer);state.levelTransitionTimer=null;
   ui.modal.classList.add("visible");
   ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">${win?"✦":"☠"}</div><p class="eyebrow">${win?"CAMPAIGN COMPLETE":"THE HEARTSTONE FELL"}</p><h2>${win?"THE REALMS ENDURE":"THE RIFT CONSUMES ALL"}</h2><p>${win?"Every guardian is broken. For now, the Elements stand united—and your legend is carved into the Heartstone.":"Rebuild your deck, rethink your placements, and return stronger."}</p><button id="restartGame" class="primary large">BEGIN A NEW CAMPAIGN</button></div>`;
   $("restartGame").onclick=()=>location.reload();
+}
+
+function triggerDefeat(){
+  if(state.gameOver)return;
+  state.gameOver=true;state.waveActive=false;state.started=false;state.spawnQueue=[];
+  clearTimeout(state.levelTransitionTimer);state.levelTransitionTimer=null;
+  syncBossBar();showEnd(false);
 }
 
 function toast(msg){
@@ -1079,8 +1101,8 @@ function loop(now){
     state.beams=state.beams.filter(b=>b.life>0);
     state.floaters=state.floaters.filter(f=>f.life>0);
     state.particles=state.particles.filter(p=>p.life>0);
-    completeWaveCheck();
-    if(state.lives<=0){state.waveActive=false;showEnd(false);state.started=false;}
+    if(state.lives<=0)triggerDefeat();
+    else completeWaveCheck();
     syncBossBar();
   }
   ctx.save();
