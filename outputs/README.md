@@ -93,6 +93,8 @@ Later campaign levels introduce Forgotten One, Goblin Psychic, Soul Strangler, a
 
 River Hellondale enters later campaigns as a Frost Mage. Every 5.8 seconds it freezes the nearest tower within 175 range for 2.4 seconds. Frozen towers cannot attack or trigger thorns; the ice shell displays the remaining duration.
 
+Supply Runner now projects a visible 155-range same-lane aura that accelerates allies by 22%. Boosted units display gold speed trails, while the Runner moves slowly enough to remain with its pack.
+
 **Yaba's Pickle** has a 22% chance to wander into non-boss waves from wave two onward. Defeating this rare special enemy restores 3 Core.
 
 ## Time immunity and boss tuning

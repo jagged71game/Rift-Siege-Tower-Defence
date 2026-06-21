@@ -25,7 +25,7 @@ const enemies = [
   {name:"Forgotten One",hp:380,armor:.26,share:.07,extra:0,weakTo:"water",resists:"fire",slowImmune:true,magicResist:1},
   {name:"Goblin Psychic",hp:175,armor:.06,share:.07,extra:70,weakTo:"death",resists:"earth",magicResist:.50},
   {name:"Soul Strangler",hp:105,armor:0,share:.04,extra:0,weakTo:"light",resists:"death",magicResist:.60},
-  {name:"Supply Runner",hp:155,armor:.08,share:.03,extra:35,weakTo:"fire",resists:"water"},
+  {name:"Supply Runner",hp:155,armor:.08,share:.03,extra:60,weakTo:"fire",resists:"water"},
   {name:"River Hellondale",hp:205,armor:.10,share:.01,extra:90,weakTo:"fire",resists:"water",magicResist:.45}
 ];
 

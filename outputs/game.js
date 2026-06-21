@@ -54,7 +54,7 @@ const ENEMY_TYPES = [
   {name:"Forgotten One",art:"assets/forgotten-one.png",hp:380,speed:27,radius:22,reward:32,armor:.26,lavaImmune:true,slowImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#d35e39"},
   {name:"Goblin Psychic",art:"assets/goblin-psychic.png",hp:175,speed:38,radius:15,reward:23,armor:.06,magicResist:.50,trait:"regenerator",weakTo:"death",resists:"earth",regen:5,color:"#6fbd53"},
   {name:"Soul Strangler",art:"assets/soul-strangler.png",hp:105,speed:73,radius:12,reward:18,armor:0,magicResist:.60,trait:"ethereal",weakTo:"light",resists:"death",color:"#7d4d8d"},
-  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:58,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.16,color:"#a68b70"},
+  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:50,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.22,auraRange:155,color:"#a68b70"},
   {name:"River Hellondale",art:"assets/frost-mage.png",hp:205,speed:35,radius:16,reward:28,armor:.10,magicResist:.45,trait:"frost mage",weakTo:"fire",resists:"water",freezeRange:175,freezeDuration:2.4,freezeRate:5.8,color:"#54b9df"}
 ];
 const YABA_PICKLE = {name:"Yaba's Pickle",art:"assets/yabas-pickle.png",hp:240,speed:46,radius:18,reward:35,armor:.12,trait:"special",weakTo:"death",resists:"water",heartReward:3,special:true,color:"#79d84f"};
@@ -70,7 +70,7 @@ const ENEMY_SPECIALS = {
   ,"Forgotten One":"A fireproof armored brute immune to lava pools, Fire attacks, and Time Snare."
   ,"Goblin Psychic":"Regenerates 5 health each second while advancing. Death damage prevents its sustain from becoming overwhelming."
   ,"Soul Strangler":"A fast ethereal attacker. Life attacks are its natural counter; Death damage is resisted."
-  ,"Supply Runner":"Accelerates nearby enemies by 16%. Eliminate the support unit before the whole lane surges."
+  ,"Supply Runner":"Accelerates nearby enemies in the same lane by 22% within 155 range. Eliminate it before the pack surges."
   ,"River Hellondale":"A Frost Mage that freezes the nearest tower for 2.4 seconds every 5.8 seconds. Fire attacks counter it."
   ,"Yaba's Pickle":"A rare Rift wanderer that may appear unexpectedly. Defeat it before it escapes to restore 3 Core."
 };
@@ -382,7 +382,7 @@ function enemyFromType(d,mult=1,x=-30,y=0,pathIndex=1,lane=0){
     reward:Math.round(d.reward*Math.max(1,mult*.72)),color:d.color,armor:d.armor||0,name:d.name,art:d.art,
     lavaImmune:!!d.lavaImmune,slowImmune:!!d.slowImmune,magicResist:d.magicResist||0,trait:d.trait,weakTo:d.weakTo,resists:d.resists,
     splitInto:d.splitInto||null,spawnType:d.spawnType||null,spawnCount:d.spawnCount||0,
-    regen:d.regen||0,speedAura:d.speedAura||0,freezeRange:d.freezeRange||0,freezeDuration:d.freezeDuration||0,
+    regen:d.regen||0,speedAura:d.speedAura||0,auraRange:d.auraRange||0,freezeRange:d.freezeRange||0,freezeDuration:d.freezeDuration||0,
     freezeRate:d.freezeRate||0,heartReward:d.heartReward||0,special:!!d.special,
     boss:false,lane,slowUntil:0,slowFactor:1,curseUntil:0,poisonUntil:0,poisonDps:0,spawned:false};
 }
@@ -505,7 +505,11 @@ function updateEnemy(e,dt){
   const path=enemyPath(e), target=path[e.pathIndex];
   if(!target)return;
   const dx=target[0]-e.x,dy=target[1]-e.y,d=Math.hypot(dx,dy);
-  const supportBoost=state.enemies.some(o=>o!==e&&!o.dead&&o.speedAura&&dist(o,e)<105)?1.16:1;
+  const support=state.enemies
+    .filter(o=>o!==e&&!o.dead&&o.speedAura&&o.lane===e.lane&&dist(o,e)<(o.auraRange||105))
+    .sort((a,b)=>dist(a,e)-dist(b,e))[0];
+  const supportBoost=support?support.speedAura:1;
+  e.speedBoosted=!!support;
   const move=e.speed*e.slowFactor*supportBoost*dt;
   if(move>=d){
     e.x=target[0];e.y=target[1];e.pathIndex++;
@@ -846,6 +850,11 @@ function drawTower(tw){
 }
 function drawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
+  if(e.speedAura){
+    const pulse=1+Math.sin(state.time*5)*.05;
+    ctx.globalAlpha=.18;ctx.fillStyle="#f3c36a";ctx.beginPath();ctx.arc(0,0,(e.auraRange||105)*pulse,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.52;ctx.strokeStyle="#f3c36a";ctx.setLineDash([5,7]);ctx.beginPath();ctx.arc(0,0,(e.auraRange||105)*pulse,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  }
   if(e.boss){ctx.shadowColor="#e14f50";ctx.shadowBlur=20;}
   const portraitW=e.radius*1.75,portraitH=e.radius*2.25;
   ctx.fillStyle=e.boss?"#2b1015":e.color;ctx.strokeStyle=e.curseUntil>state.time?"#cc72eb":"rgba(235,220,180,.8)";ctx.lineWidth=e.boss?3:1.5;
@@ -871,6 +880,10 @@ function drawEnemy(e){
   ctx.restore();
   if(!e.boss){const w=portraitW;ctx.fillStyle="#191515";ctx.fillRect(e.x-w/2,e.y-portraitH/2-7,w,4);ctx.fillStyle=e.hp/e.maxHp>.5?"#73c477":"#e26055";ctx.fillRect(e.x-w/2,e.y-portraitH/2-7,w*Math.max(0,e.hp/e.maxHp),4);}
   if(e.slowFactor<1){ctx.strokeStyle="#65d8ee";ctx.beginPath();ctx.arc(e.x,e.y,e.radius+4,0,Math.PI*2);ctx.stroke();}
+  if(e.speedBoosted){
+    ctx.strokeStyle="#f3c36a";ctx.lineWidth=2;
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(e.x-e.radius-5-i*5,e.y-5+i*5);ctx.lineTo(e.x-e.radius-12-i*5,e.y-5+i*5);ctx.stroke();}
+  }
 }
 const BOSS_IMAGES={};
 function bossImage(e){
