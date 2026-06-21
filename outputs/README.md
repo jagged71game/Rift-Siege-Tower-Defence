@@ -31,6 +31,8 @@ Open `index.html` in a modern desktop browser.
 
 Completing a wave without losing Core grants an escalating Flawless streak bonus. Taking damage resets the streak.
 
+Campaign progress is checkpointed on the player's device. Defeat offers **Retry Wave**, restoring towers, upgrades, Dark Energy, Core, and the battlefield exactly as they stood before that wave; **Restart Realm** returns to its entry checkpoint; and **Choose Realm** opens any previously unlocked level. Players no longer need to restart at Level 1 after losing.
+
 ## Monster tower abilities
 
 - **Living Lava:** impact splash plus a lingering burning lava pool.

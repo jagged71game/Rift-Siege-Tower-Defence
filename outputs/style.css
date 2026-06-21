@@ -378,6 +378,21 @@ main.side-collapsed .side-toggle {
 .modal-card > p:not(.eyebrow) { color: #aea899; line-height: 1.55; font-size: 12px; }
 .mini-rules { display: flex; justify-content: center; gap: 18px; margin: 20px 0; color: #a49d8e; font-size: 9px; }
 .mini-rules b { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid #735d38; border-radius: 50%; color: var(--gold); margin-right: 4px; }
+.modal-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.secondary {
+  padding: 10px 20px; border: 1px solid rgba(226,194,121,.35); border-radius: 3px;
+  background: #17212a; color: #e8d7aa; font-weight: 800; letter-spacing: .07em; font-size: 11px;
+}
+.realm-selector { width: min(650px, 92vw); max-width: 650px; }
+.realm-choices { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; max-height: 44vh; overflow: auto; margin-top: 16px; }
+.realm-choice {
+  display: grid; gap: 3px; padding: 11px 13px; text-align: left; border: 1px solid rgba(226,194,121,.22);
+  border-radius: 4px; background: rgba(255,255,255,.035); color: var(--ink);
+}
+.realm-choice:hover, .realm-choice:focus { border-color: var(--gold); background: rgba(240,184,73,.1); }
+.realm-choice span { color: var(--gold); font-size: 7px; font-weight: 800; letter-spacing: .15em; }
+.realm-choice b { font: 700 14px Cinzel,serif; }
+.realm-choice small { color: var(--muted); font-size: 8px; }
 .large { padding: 13px 30px; }
 
 @media (max-width: 1000px) {
@@ -450,6 +465,10 @@ main.side-collapsed .side-toggle {
   .modal-card h2 { font-size: 17px; }
   .modal-card > p:not(.eyebrow) { font-size: 9px; margin: 6px 0; }
   .mini-rules { margin: 9px 0; }
+  .modal-actions { margin-top: 10px; }
+  .realm-choices { max-height: 48vh; gap: 5px; margin-top: 9px; }
+  .realm-choice { padding: 7px 9px; }
+  .realm-choice b { font-size: 11px; }
   .side-panel { width: min(250px, 62vw); }
   main.mobile-side-open .side-toggle { right: min(250px, 62vw); }
   .realm-map, .intel, .codex { padding: 10px; }

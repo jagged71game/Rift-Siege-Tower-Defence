@@ -59,7 +59,7 @@ const ENEMY_TYPES = [
   {name:"River Hellondale",art:"assets/frost-mage.png",hp:205,speed:35,radius:16,reward:28,armor:.10,magicResist:.45,trait:"frost mage",weakTo:"fire",resists:"water",freezeRange:175,freezeDuration:2.4,freezeRate:5.8,color:"#54b9df"}
 ];
 const YABA_PICKLE = {name:"Yaba's Pickle",art:"assets/yabas-pickle.png",hp:240,speed:46,radius:18,reward:35,armor:.12,trait:"special",weakTo:"death",resists:"water",heartReward:3,special:true,color:"#79d84f"};
-const COIN_THIEF = {name:"Coin Thief",art:"assets/stitch-leech.png",hp:125,speed:70,radius:13,reward:30,armor:.04,magicResist:.20,trait:"raider",weakTo:"fire",resists:"death",coinSteal:45,special:true,color:"#d7a43d"};
+const COIN_THIEF = {name:"Coin Thief",art:"assets/coin-thief.webp",hp:125,speed:70,radius:13,reward:30,armor:.04,magicResist:.20,trait:"raider",weakTo:"fire",resists:"death",coinSteal:45,special:true,color:"#d7a43d"};
 const ENEMY_SPECIALS = {
   "Antoid Platoon":"Fireproof formation. Immune to Living Lava's burning pools and highly resistant to direct Fire damage.",
   "Cruel Sethropod":"A plated frontline creature built to absorb repeated physical volleys. Earth magic is its cleanest counter.",
@@ -107,14 +107,34 @@ const LEVELS = [
   ], pads:[[85,200],[285,285],[335,535],[435,120],[550,350],[620,175],[740,485],[840,170],[950,370]], waves:9, boss:"Chaos Dragon", bossIcon:"♜", bossArt:"assets/chaos-dragon.png" }
 ];
 
+const CAMPAIGN_SAVE_KEY="riftSiegeCampaignV1";
+function loadCampaignProgress(){
+  try{return JSON.parse(localStorage.getItem(CAMPAIGN_SAVE_KEY))||{};}catch(_){return {};}
+}
+const savedCampaign=loadCampaignProgress();
+const savedCheckpoints=savedCampaign.checkpoints||{"0":{shards:320,lives:20}};
+
 const state = {
   started:false, level:0, wave:0, shards:320, lives:20, selectedType:null, selectedTower:null,
   towers:[], enemies:[], projectiles:[], particles:[], areas:[], beams:[], floaters:[], waveActive:false, spawnQueue:[],
-  spawnTimer:0, time:0, speed:1, completed:0, shake:0, hoveredPad:-1, sound:true, audio:null,
+  spawnTimer:0, time:0, speed:1, completed:Math.max(0,Math.min(LEVELS.length-1,savedCampaign.unlocked||0)), shake:0, hoveredPad:-1, sound:true, audio:null,
   paused:false, waveStartLives:20, flawlessStreak:0, waveEncounters:new Map(), discoveredEnemies:new Map(),
   camera:{zoom:1,panX:0,panY:0},touches:new Map(),gesture:null,suppressClickUntil:0,
-  gameOver:false,levelTransitionTimer:null
+  gameOver:false,levelTransitionTimer:null,realmCheckpoints:savedCheckpoints,realmCheckpoint:{...(savedCheckpoints["0"]||{shards:320,lives:20})},
+  waveCheckpoint:null
 };
+
+function saveCampaignProgress(){
+  try{localStorage.setItem(CAMPAIGN_SAVE_KEY,JSON.stringify({unlocked:state.completed,checkpoints:state.realmCheckpoints}));}catch(_){}
+}
+function checkpointForLevel(level){
+  return state.realmCheckpoints[String(level)]||{shards:320+level*180,lives:20};
+}
+function storeRealmCheckpoint(level,shards,lives){
+  const key=String(level);
+  if(!state.realmCheckpoints[key])state.realmCheckpoints[key]={shards:Math.floor(shards),lives:Math.max(1,Math.floor(lives))};
+  saveCampaignProgress();
+}
 
 function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
 function lerp(a,b,t){ return a+(b-a)*t; }
@@ -360,6 +380,10 @@ ui.target.onclick=()=>{
 
 function beginWave(){
   if(state.waveActive||state.wave>=LEVELS[state.level].waves)return;
+  state.waveCheckpoint={
+    level:state.level,wave:state.wave,shards:state.shards,lives:state.lives,flawlessStreak:state.flawlessStreak,
+    towers:state.towers.map(t=>({...t,frozenUntil:0,selectedAt:0}))
+  };
   state.waveActive=true; state.wave++;
   state.waveEncounters.clear();initBestiary();
   state.waveStartLives=state.lives;
@@ -755,6 +779,8 @@ function completeWaveCheck(){
   const level=LEVELS[state.level];
   if(state.wave>=level.waves){
     state.completed=Math.max(state.completed,state.level+1);
+    state.completed=Math.min(LEVELS.length-1,state.completed);
+    saveCampaignProgress();
     if(state.level===LEVELS.length-1){ showEnd(true); }
     else {
       clearTimeout(state.levelTransitionTimer);
@@ -779,13 +805,53 @@ function completeWaveCheck(){
   updateUI();
 }
 
+function startRealm(level,checkpoint=checkpointForLevel(level)){
+  clearTimeout(state.levelTransitionTimer);state.levelTransitionTimer=null;
+  state.level=level;state.wave=0;state.shards=checkpoint.shards;state.lives=checkpoint.lives;
+  state.realmCheckpoint={...checkpoint};state.towers=[];state.enemies=[];state.projectiles=[];state.particles=[];
+  state.areas=[];state.beams=[];state.floaters=[];state.spawnQueue=[];state.waveActive=false;state.spawnTimer=0;
+  state.selectedTower=null;state.selectedType=null;state.hoveredPad=-1;state.paused=false;state.gameOver=false;
+  state.started=true;state.waveStartLives=state.lives;state.flawlessStreak=0;state.waveCheckpoint=null;state.waveEncounters.clear();
+  canvas.parentElement.classList.remove("paused");ui.pause.textContent="Ⅱ";
+  syncBossBar();resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();
+  toast(`ENTERING ${LEVELS[level].name.toUpperCase()}`);
+}
+
+function retryWave(){
+  const checkpoint=state.waveCheckpoint;
+  if(!checkpoint||checkpoint.level!==state.level){startRealm(state.level,state.realmCheckpoint);return;}
+  clearTimeout(state.levelTransitionTimer);state.levelTransitionTimer=null;
+  state.wave=checkpoint.wave;state.shards=checkpoint.shards;state.lives=checkpoint.lives;
+  state.flawlessStreak=checkpoint.flawlessStreak;state.towers=checkpoint.towers.map(t=>({...t}));
+  state.enemies=[];state.projectiles=[];state.particles=[];state.areas=[];state.beams=[];state.floaters=[];
+  state.spawnQueue=[];state.waveActive=false;state.spawnTimer=0;state.selectedTower=null;state.selectedType=null;
+  state.hoveredPad=-1;state.paused=false;state.gameOver=false;state.started=true;state.waveStartLives=state.lives;
+  state.waveEncounters.clear();canvas.parentElement.classList.remove("paused");ui.pause.textContent="Ⅱ";
+  syncBossBar();ui.modal.classList.remove("visible");updateSelection();updateUI();
+  toast(`WAVE ${checkpoint.wave+1} RESET · ADJUST YOUR DEFENCE`);
+}
+
+function showRealmChooser(){
+  const choices=LEVELS.map((level,index)=>index<=state.completed
+    ? `<button class="realm-choice" data-level="${index}"><span>LEVEL ${index+1}</span><b>${level.name}</b><small>${level.realm} · ${level.waves} WAVES</small></button>`
+    : "").join("");
+  ui.modal.classList.add("visible");
+  ui.modal.innerHTML=`<div class="modal-card realm-selector"><div class="sigil">⌖</div><p class="eyebrow">UNLOCKED REALMS</p><h2>CHOOSE YOUR BATTLEFIELD</h2><p>Replay any realm you have reached. Each begins from its saved entry checkpoint.</p><div class="realm-choices">${choices}</div></div>`;
+  ui.modal.querySelectorAll(".realm-choice").forEach(button=>button.onclick=()=>{
+    const level=Number(button.dataset.level);startRealm(level,checkpointForLevel(level));
+  });
+}
+
 function showLevelComplete(){
   if(state.gameOver||state.lives<=0)return;
   ui.modal.classList.add("visible");
   ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">✓</div><p class="eyebrow">REALM SECURED</p><h2>${LEVELS[state.level].name}</h2><p>The rift guardian has fallen. Your surviving champions have been recalled, and the next battlefield awaits.</p><div class="mini-rules"><span>Clear bonus <b>✦</b> ${180+state.level*50}</span><span>Core restored <b>♥</b> +7</span></div><button id="nextLevel" class="primary large">TRAVEL TO ${LEVELS[state.level+1].name.toUpperCase()}</button></div>`;
   $("nextLevel").onclick=()=>{
     if(state.gameOver||state.lives<=0){triggerDefeat();return;}
-    state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.spawnQueue=[];state.selectedTower=null;state.selectedType=null;syncBossBar();resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();
+    const nextLevel=state.level+1;
+    const checkpoint={shards:state.shards+180+state.level*50,lives:Math.min(22,state.lives+7)};
+    storeRealmCheckpoint(nextLevel,checkpoint.shards,checkpoint.lives);
+    startRealm(nextLevel,checkpointForLevel(nextLevel));
   };
 }
 
@@ -793,8 +859,10 @@ function showEnd(win){
   if(!win)state.gameOver=true;
   clearTimeout(state.levelTransitionTimer);state.levelTransitionTimer=null;
   ui.modal.classList.add("visible");
-  ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">${win?"✦":"☠"}</div><p class="eyebrow">${win?"CAMPAIGN COMPLETE":"THE HEARTSTONE FELL"}</p><h2>${win?"THE REALMS ENDURE":"THE RIFT CONSUMES ALL"}</h2><p>${win?"Every guardian is broken. For now, the Elements stand united—and your legend is carved into the Heartstone.":"Rebuild your deck, rethink your placements, and return stronger."}</p><button id="restartGame" class="primary large">BEGIN A NEW CAMPAIGN</button></div>`;
-  $("restartGame").onclick=()=>location.reload();
+  ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">${win?"✦":"☠"}</div><p class="eyebrow">${win?"CAMPAIGN COMPLETE":"THE HEARTSTONE FELL"}</p><h2>${win?"THE REALMS ENDURE":"THE RIFT CONSUMES ALL"}</h2><p>${win?"Every guardian is broken. For now, the Elements stand united—and your legend is carved into the Heartstone.":"Retry from immediately before the failed wave, restart the realm, or return to another unlocked battlefield."}</p><div class="modal-actions">${win?"":`<button id="retryWave" class="primary large">RETRY WAVE ${state.wave}</button>`}<button id="retryRealm" class="${win?"primary":"secondary"} large">${win?"REPLAY FINAL REALM":"RESTART REALM"}</button><button id="chooseRealm" class="secondary large">CHOOSE REALM</button></div></div>`;
+  if(!win)$("retryWave").onclick=retryWave;
+  $("retryRealm").onclick=()=>startRealm(state.level,state.realmCheckpoint);
+  $("chooseRealm").onclick=showRealmChooser;
 }
 
 function triggerDefeat(){
