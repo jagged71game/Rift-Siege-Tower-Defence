@@ -59,6 +59,7 @@ const ENEMY_TYPES = [
   {name:"River Hellondale",art:"assets/frost-mage.png",hp:205,speed:35,radius:16,reward:28,armor:.10,magicResist:.45,trait:"frost mage",weakTo:"fire",resists:"water",freezeRange:175,freezeDuration:2.4,freezeRate:5.8,color:"#54b9df"}
 ];
 const YABA_PICKLE = {name:"Yaba's Pickle",art:"assets/yabas-pickle.png",hp:240,speed:46,radius:18,reward:35,armor:.12,trait:"special",weakTo:"death",resists:"water",heartReward:3,special:true,color:"#79d84f"};
+const COIN_THIEF = {name:"Coin Thief",art:"assets/stitch-leech.png",hp:125,speed:70,radius:13,reward:30,armor:.04,magicResist:.20,trait:"raider",weakTo:"fire",resists:"death",coinSteal:45,special:true,color:"#d7a43d"};
 const ENEMY_SPECIALS = {
   "Antoid Platoon":"Fireproof formation. Immune to Living Lava's burning pools and highly resistant to direct Fire damage.",
   "Cruel Sethropod":"A plated frontline creature built to absorb repeated physical volleys. Earth magic is its cleanest counter.",
@@ -74,6 +75,7 @@ const ENEMY_SPECIALS = {
   ,"Supply Runner":"Accelerates nearby enemies in the same lane by 22% within 155 range. Eliminate it before the pack surges."
   ,"River Hellondale":"A Frost Mage that freezes the nearest tower for 2.4 seconds every 5.8 seconds. Fire attacks counter it."
   ,"Yaba's Pickle":"A rare Rift wanderer that may appear unexpectedly. Defeat it before it escapes to restore 3 Core."
+  ,"Coin Thief":"A rare, fast raider carrying a Dark Energy siphon. Defeat it for its bounty; if it reaches the Rift, it steals Dark Energy instead of damaging Core."
 };
 const BOSS_SPECIALS = {
   "Yodin Zaku":"Fire Element summoner immune to Time Snare. At 72% and 38% health he summons fireproof Antoid guards.",
@@ -85,6 +87,7 @@ const BOSS_SPECIALS = {
 const ENEMY_IMAGES = {};
 ENEMY_TYPES.forEach(t=>{const image=new Image();image.src=t.art;ENEMY_IMAGES[t.name]=image;});
 {const image=new Image();image.src=YABA_PICKLE.art;ENEMY_IMAGES[YABA_PICKLE.name]=image;}
+{const image=new Image();image.src=COIN_THIEF.art;ENEMY_IMAGES[COIN_THIEF.name]=image;}
 
 const LEVELS = [
   { name:"Mount Praetoria", realm:"Fire Element", tint:"#6b3527", path:[[0,310],[150,310],[150,150],[370,150],[370,420],[610,420],[610,240],[820,240],[820,430],[1100,430]], pads:[[85,205],[235,250],[285,75],[455,240],[500,510],[690,340],[720,150],[910,330],[970,510]], waves:5, boss:"Yodin Zaku", bossIcon:"♜", bossArt:"assets/yodin-zaku.png" },
@@ -368,12 +371,14 @@ function beginWave(){
     const pickle=enemyFromType(YABA_PICKLE,1+state.level*.18,-30,0,1,lane);
     state.spawnQueue.splice(Math.floor(state.spawnQueue.length*(.35+Math.random()*.4)),0,pickle);
   }
+  if(!isBoss&&state.wave>=3&&Math.random()<Math.min(.28,.16+state.level*.03)){
+    const lane=Math.floor(Math.random()*levelPaths().length);
+    const thief=enemyFromType(COIN_THIEF,1+state.level*.16,-30,0,1,lane);
+    thief.coinSteal+=state.level*10;
+    state.spawnQueue.splice(Math.floor(state.spawnQueue.length*(.25+Math.random()*.5)),0,thief);
+  }
   state.spawnTimer=.2; ui.start.disabled=true;
-  if(isBoss){
-    const level=LEVELS[state.level], boss=state.spawnQueue[0];
-    ui.bossBar.classList.remove("hidden");ui.bossName.textContent=level.boss;
-    ui.bossHp.style.width="100%";ui.bossHpText.textContent=`${Math.ceil(boss.maxHp)} / ${Math.ceil(boss.maxHp)}`;
-  }else ui.bossBar.classList.add("hidden");
+  syncBossBar();
   sound("wave");
   toast(isBoss?`BOSS: ${LEVELS[state.level].boss.toUpperCase()}`:`WAVE ${state.wave} INCOMING`);
   updateUI();
@@ -412,6 +417,7 @@ function enemyFromType(d,mult=1,x=-30,y=0,pathIndex=1,lane=0){
     splitInto:d.splitInto||null,spawnType:d.spawnType||null,spawnCount:d.spawnCount||0,
     regen:d.regen||0,speedAura:d.speedAura||0,auraRange:d.auraRange||0,freezeRange:d.freezeRange||0,freezeDuration:d.freezeDuration||0,
     freezeRate:d.freezeRate||0,heartReward:d.heartReward||0,special:!!d.special,
+    coinSteal:d.coinSteal||0,
     boss:false,lane,slowUntil:0,slowFactor:1,curseUntil:0,poisonUntil:0,poisonDps:0,spawned:false};
 }
 
@@ -424,8 +430,23 @@ function spawnEnemy(e){
     initBestiary();
     toast(`NEW ENEMY DISCOVERED: ${e.name.toUpperCase()}`);
   }
-  if(e.special)toast("A RARE YABA'S PICKLE HAS ENTERED THE RIFT!");
+  if(e.name===YABA_PICKLE.name)toast("A RARE YABA'S PICKLE HAS ENTERED THE RIFT!");
+  if(e.coinSteal)toast(`COIN THIEF SPOTTED · PROTECT ✦ ${e.coinSteal}`);
   if(e.boss){ui.bossBar.classList.remove("hidden");ui.bossName.textContent=e.name;}
+}
+
+function syncBossBar(){
+  const boss=state.enemies.find(e=>e.boss&&!e.dead&&!e.escaped)||state.spawnQueue.find(e=>e.boss);
+  if(!boss){
+    ui.bossBar.classList.add("hidden");
+    ui.bossHp.style.width="0%";
+    ui.bossHpText.textContent="";
+    return;
+  }
+  ui.bossBar.classList.remove("hidden");
+  ui.bossName.textContent=boss.name;
+  ui.bossHp.style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;
+  ui.bossHpText.textContent=`${Math.ceil(Math.max(0,boss.hp))} / ${Math.ceil(boss.maxHp)}`;
 }
 
 function damageCore(amount){
@@ -442,9 +463,19 @@ function damageCore(amount){
 function displayEnergyGain(amount){
   ui.shards.textContent=Math.floor(state.shards);
   const box=ui.shards.closest(".resource");
-  box.classList.remove("energy-gain");
+  box.classList.remove("energy-gain","energy-loss");
   void box.offsetWidth;
   box.classList.add("energy-gain");
+}
+
+function displayEnergyLoss(amount){
+  ui.shards.textContent=Math.floor(state.shards);
+  const box=ui.shards.closest(".resource");
+  box.classList.remove("energy-gain","energy-loss");
+  void box.offsetWidth;
+  box.classList.add("energy-loss");
+  toast(`COIN THIEF ESCAPED · −✦ ${amount}`);
+  sound("core");
 }
 
 function initAudio(){
@@ -542,7 +573,17 @@ function updateEnemy(e,dt){
   if(move>=d){
     e.x=target[0];e.y=target[1];e.pathIndex++;
     if(e.pathIndex>=path.length){
-      e.escaped=true;damageCore(e.boss?8:1);state.shake=e.boss?18:7;burst(e.x,e.y,"#e3484f",18);
+      e.escaped=true;
+      if(e.coinSteal){
+        const stolen=Math.min(Math.floor(state.shards),e.coinSteal);
+        state.shards-=stolen;
+        displayEnergyLoss(stolen);
+        state.floaters.push({x:e.x,y:e.y-12,text:`−✦ ${stolen}`,color:"#ffbd4a",life:1.1,max:1.1});
+      }else{
+        damageCore(e.boss?8:1);
+      }
+      if(e.boss)syncBossBar();
+      state.shake=e.boss?18:7;burst(e.x,e.y,e.coinSteal?"#f3c85d":"#e3484f",18);
     }
   } else { e.x+=dx/d*move;e.y+=dy/d*move; }
 }
@@ -610,8 +651,9 @@ function killEnemy(e,color){
     state.lives=Math.min(22,state.lives+e.heartReward);ui.lives.textContent=state.lives;
     toast(`YABA'S PICKLE RESCUED · +${e.heartReward} ♥ CORE`);
   }
+  if(e.coinSteal)toast(`COIN THIEF CAUGHT · BOUNTY +✦ ${e.reward}`);
   sound(e.boss?"bossDown":"down");
-  if(e.boss){state.shake=20;ui.bossBar.classList.add("hidden");toast(`${e.name.toUpperCase()} DEFEATED`);}
+  if(e.boss){state.shake=20;syncBossBar();toast(`${e.name.toUpperCase()} DEFEATED`);}
 }
 
 function spawnChildren(parent,typeName,count,fromSplit){
@@ -706,6 +748,7 @@ function burst(x,y,color,count){
 function completeWaveCheck(){
   if(!state.waveActive||state.spawnQueue.length||state.enemies.some(e=>!e.dead&&!e.escaped))return;
   state.waveActive=false;
+  syncBossBar();
   const level=LEVELS[state.level];
   if(state.wave>=level.waves){
     state.completed=Math.max(state.completed,state.level+1);
@@ -730,7 +773,7 @@ function completeWaveCheck(){
 function showLevelComplete(){
   ui.modal.classList.add("visible");
   ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">✓</div><p class="eyebrow">REALM SECURED</p><h2>${LEVELS[state.level].name}</h2><p>The rift guardian has fallen. Your surviving champions have been recalled, and the next battlefield awaits.</p><div class="mini-rules"><span>Clear bonus <b>✦</b> ${180+state.level*50}</span><span>Core restored <b>♥</b> +7</span></div><button id="nextLevel" class="primary large">TRAVEL TO ${LEVELS[state.level+1].name.toUpperCase()}</button></div>`;
-  $("nextLevel").onclick=()=>{state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.selectedTower=null;state.selectedType=null;resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();};
+  $("nextLevel").onclick=()=>{state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.spawnQueue=[];state.selectedTower=null;state.selectedType=null;syncBossBar();resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();};
 }
 
 function showEnd(win){
@@ -955,6 +998,7 @@ function drawEnemy(e){
   if(e.spawnType){ctx.fillStyle="#85e2d5";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("✣",-portraitW/2,-portraitH/2);}
   if(e.freezeRange){ctx.fillStyle="#9deaff";ctx.font="bold 11px serif";ctx.textAlign="center";ctx.fillText("❄",0,-portraitH/2-14);}
   if(e.heartReward){ctx.fillStyle="#ff7786";ctx.font="bold 12px serif";ctx.textAlign="center";ctx.fillText("♥",0,-portraitH/2-14);}
+  if(e.coinSteal){ctx.fillStyle="#ffd35c";ctx.strokeStyle="#2b1b05";ctx.lineWidth=2;ctx.font="bold 14px serif";ctx.textAlign="center";ctx.strokeText("✦",0,-portraitH/2-14);ctx.fillText("✦",0,-portraitH/2-14);}
   if(e.slowImmune){ctx.fillStyle="#9deaff";ctx.font="bold 10px serif";ctx.textAlign="center";ctx.fillText("⌛̸",0,portraitH/2+10);}
   ctx.font="bold 7px Inter";ctx.textAlign="center";
   ctx.fillStyle="#68d99a";ctx.fillRect(-portraitW/2,-portraitH/2-10,portraitW/2-1,9);
@@ -1037,8 +1081,7 @@ function loop(now){
     state.particles=state.particles.filter(p=>p.life>0);
     completeWaveCheck();
     if(state.lives<=0){state.waveActive=false;showEnd(false);state.started=false;}
-    const boss=state.enemies.find(e=>e.boss);
-    if(boss){ui.bossHp.style.width=`${Math.max(0,boss.hp/boss.maxHp*100)}%`;ui.bossHpText.textContent=`${Math.ceil(Math.max(0,boss.hp))} / ${Math.ceil(boss.maxHp)}`;}
+    syncBossBar();
   }
   ctx.save();
   if(state.shake>0){ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);state.shake*=.88;if(state.shake<.3)state.shake=0;}

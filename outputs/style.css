@@ -45,6 +45,8 @@ h1 { font-size: 23px; letter-spacing: .05em; }
 .resource.core-hit .heart, .resource.core-hit b { color: #ff4c54; text-shadow: 0 0 14px #ff313b; }
 .resource.energy-gain { animation: energyGain .42s ease; }
 .resource.energy-gain .coin, .resource.energy-gain b { color: #ffd86c; text-shadow: 0 0 14px #eeb437; }
+.resource.energy-loss { animation: energyLoss .55s ease; }
+.resource.energy-loss .coin, .resource.energy-loss b { color: #ff7b47; text-shadow: 0 0 14px #e54c2d; }
 @keyframes coreHit {
   0% { transform: scale(1); background: rgba(255,255,255,.025); }
   35% { transform: scale(1.12); background: rgba(217,44,52,.3); border-color: #ec5960; }
@@ -54,6 +56,13 @@ h1 { font-size: 23px; letter-spacing: .05em; }
   0% { transform: scale(1); background: rgba(255,255,255,.025); }
   40% { transform: scale(1.08); background: rgba(218,161,48,.22); border-color: #e4b34f; }
   100% { transform: scale(1); background: rgba(255,255,255,.025); }
+}
+@keyframes energyLoss {
+  0% { transform: translateX(0); background: rgba(255,255,255,.025); }
+  25% { transform: translateX(-5px); background: rgba(197,55,29,.3); border-color: #ec704e; }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); background: rgba(255,255,255,.025); }
 }
 .speed-btn {
   width: 48px; height: 38px; border: 1px solid var(--line); background: #18212a;

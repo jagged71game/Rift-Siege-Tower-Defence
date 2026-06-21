@@ -99,6 +99,8 @@ Supply Runner now projects a visible 155-range same-lane aura that accelerates a
 
 **Yaba's Pickle** has a 22% chance to wander into non-boss waves from wave two onward. Defeating this rare special enemy restores 3 Core.
 
+From wave three onward, a rare **Coin Thief** may raid the battlefield. It does not damage Core if it escapes; instead, it steals 45–85 Dark Energy depending on campaign depth. Defeating it first awards its normal Dark Energy bounty. Like other enemies, it remains hidden in the Bestiary until encountered.
+
 ## Time immunity and boss tuning
 
 - Yodin Zaku, Harklaw, Chaos Dragon, Forgotten One, Legionnaire Alvar, and Chaos Agent are immune to Time Mage's slow.
