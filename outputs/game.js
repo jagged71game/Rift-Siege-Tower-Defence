@@ -6,6 +6,7 @@ const ui = {
   shards: $("shards"), lives: $("lives"), wave: $("wave"), waveProgress: $("waveProgress"),
   levelTag: $("levelTag"), levelName: $("levelName"), start: $("startWaveBtn"), speed: $("speedBtn"),
   sound: $("soundBtn"), pause: $("pauseBtn"), fullscreen: $("fullscreenBtn"),
+  zoomIn: $("zoomInBtn"), zoomOut: $("zoomOutBtn"), zoomReset: $("zoomResetBtn"), zoomHint: $("zoomHint"),
   commandConsole: $("commandConsole"),
   cardPreview: $("cardPreview"), previewImage: $("previewImage"), previewSplinter: $("previewSplinter"),
   previewName: $("previewName"), previewAbility: $("previewAbility"), previewCost: $("previewCost"),
@@ -54,7 +55,7 @@ const ENEMY_TYPES = [
   {name:"Forgotten One",art:"assets/forgotten-one.png",hp:380,speed:27,radius:22,reward:32,armor:.26,lavaImmune:true,slowImmune:true,trait:"fireproof",weakTo:"water",resists:"fire",color:"#d35e39"},
   {name:"Goblin Psychic",art:"assets/goblin-psychic.png",hp:175,speed:38,radius:15,reward:23,armor:.06,magicResist:.50,trait:"regenerator",weakTo:"death",resists:"earth",regen:5,color:"#6fbd53"},
   {name:"Soul Strangler",art:"assets/soul-strangler.png",hp:105,speed:73,radius:12,reward:18,armor:0,magicResist:.60,trait:"ethereal",weakTo:"light",resists:"death",color:"#7d4d8d"},
-  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:58,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.16,color:"#a68b70"},
+  {name:"Supply Runner",art:"assets/supply-runner.png",hp:155,speed:50,radius:14,reward:22,armor:.08,trait:"support",weakTo:"fire",resists:"water",speedAura:1.22,auraRange:155,color:"#a68b70"},
   {name:"River Hellondale",art:"assets/frost-mage.png",hp:205,speed:35,radius:16,reward:28,armor:.10,magicResist:.45,trait:"frost mage",weakTo:"fire",resists:"water",freezeRange:175,freezeDuration:2.4,freezeRate:5.8,color:"#54b9df"}
 ];
 const YABA_PICKLE = {name:"Yaba's Pickle",art:"assets/yabas-pickle.png",hp:240,speed:46,radius:18,reward:35,armor:.12,trait:"special",weakTo:"death",resists:"water",heartReward:3,special:true,color:"#79d84f"};
@@ -70,7 +71,7 @@ const ENEMY_SPECIALS = {
   ,"Forgotten One":"A fireproof armored brute immune to lava pools, Fire attacks, and Time Snare."
   ,"Goblin Psychic":"Regenerates 5 health each second while advancing. Death damage prevents its sustain from becoming overwhelming."
   ,"Soul Strangler":"A fast ethereal attacker. Life attacks are its natural counter; Death damage is resisted."
-  ,"Supply Runner":"Accelerates nearby enemies by 16%. Eliminate the support unit before the whole lane surges."
+  ,"Supply Runner":"Accelerates nearby enemies in the same lane by 22% within 155 range. Eliminate it before the pack surges."
   ,"River Hellondale":"A Frost Mage that freezes the nearest tower for 2.4 seconds every 5.8 seconds. Fire attacks counter it."
   ,"Yaba's Pickle":"A rare Rift wanderer that may appear unexpectedly. Defeat it before it escapes to restore 3 Core."
 };
@@ -107,7 +108,8 @@ const state = {
   started:false, level:0, wave:0, shards:320, lives:20, selectedType:null, selectedTower:null,
   towers:[], enemies:[], projectiles:[], particles:[], areas:[], beams:[], floaters:[], waveActive:false, spawnQueue:[],
   spawnTimer:0, time:0, speed:1, completed:0, shake:0, hoveredPad:-1, sound:true, audio:null,
-  paused:false, waveStartLives:20, flawlessStreak:0, waveEncounters:new Map(), discoveredEnemies:new Map()
+  paused:false, waveStartLives:20, flawlessStreak:0, waveEncounters:new Map(), discoveredEnemies:new Map(),
+  camera:{zoom:1,panX:0,panY:0},touches:new Map(),gesture:null,suppressClickUntil:0
 };
 
 function dist(a,b){ return Math.hypot(a.x-b.x,a.y-b.y); }
@@ -117,6 +119,31 @@ function elementLabel(id){ return id==="light"?"LIFE":String(id||"?").toUpperCas
 function attackElement(tower){ return tower.element||tower.id; }
 function scaleX(){ return canvas.width / canvas.clientWidth; }
 function scaleY(){ return canvas.height / canvas.clientHeight; }
+function screenToWorld(clientX,clientY){
+  const rect=canvas.getBoundingClientRect();
+  const rawX=(clientX-rect.left)*scaleX(),rawY=(clientY-rect.top)*scaleY();
+  const c=state.camera,cx=canvas.width/2,cy=canvas.height/2;
+  return {x:(rawX-cx-c.panX)/c.zoom+cx,y:(rawY-cy-c.panY)/c.zoom+cy,rawX,rawY};
+}
+function worldToCanvas(x,y){
+  const c=state.camera,cx=canvas.width/2,cy=canvas.height/2;
+  return {x:cx+c.panX+(x-cx)*c.zoom,y:cy+c.panY+(y-cy)*c.zoom};
+}
+function clampCamera(){
+  const c=state.camera,maxX=canvas.width*(c.zoom-1)/2,maxY=canvas.height*(c.zoom-1)/2;
+  c.panX=Math.max(-maxX,Math.min(maxX,c.panX));c.panY=Math.max(-maxY,Math.min(maxY,c.panY));
+}
+function setZoom(next,focusX=canvas.width/2,focusY=canvas.height/2){
+  const c=state.camera,old=c.zoom;
+  next=Math.max(1,Math.min(2.6,next));
+  const cx=canvas.width/2,cy=canvas.height/2;
+  const worldX=(focusX-cx-c.panX)/old+cx,worldY=(focusY-cy-c.panY)/old+cy;
+  c.zoom=next;c.panX=focusX-cx-(worldX-cx)*next;c.panY=focusY-cy-(worldY-cy)*next;
+  clampCamera();positionTowerPopover();
+  ui.zoomHint.classList.add("visible");clearTimeout(setZoom.hintTimer);
+  setZoom.hintTimer=setTimeout(()=>ui.zoomHint.classList.remove("visible"),1100);
+}
+function resetCamera(){state.camera.zoom=1;state.camera.panX=0;state.camera.panY=0;positionTowerPopover();}
 function levelPaths(level=LEVELS[state.level]){ return level.lanes||[level.path]; }
 function enemyPath(e){ const paths=levelPaths();return paths[e.lane%paths.length]; }
 
@@ -262,8 +289,9 @@ function positionTowerPopover(){
   const tw=state.selectedTower;if(!tw||ui.towerPopover.classList.contains("hidden"))return;
   const shell=document.querySelector(".game-shell").getBoundingClientRect();
   const rect=canvas.getBoundingClientRect();
-  const px=rect.left-shell.left+(tw.x/canvas.width)*rect.width;
-  const py=rect.top-shell.top+(tw.y/canvas.height)*rect.height;
+  const transformed=worldToCanvas(tw.x,tw.y);
+  const px=rect.left-shell.left+(transformed.x/canvas.width)*rect.width;
+  const py=rect.top-shell.top+(transformed.y/canvas.height)*rect.height;
   const width=ui.towerPopover.offsetWidth,height=ui.towerPopover.offsetHeight;
   const boardTop=rect.top-shell.top;
   const boardBottom=rect.bottom-shell.top;
@@ -382,7 +410,7 @@ function enemyFromType(d,mult=1,x=-30,y=0,pathIndex=1,lane=0){
     reward:Math.round(d.reward*Math.max(1,mult*.72)),color:d.color,armor:d.armor||0,name:d.name,art:d.art,
     lavaImmune:!!d.lavaImmune,slowImmune:!!d.slowImmune,magicResist:d.magicResist||0,trait:d.trait,weakTo:d.weakTo,resists:d.resists,
     splitInto:d.splitInto||null,spawnType:d.spawnType||null,spawnCount:d.spawnCount||0,
-    regen:d.regen||0,speedAura:d.speedAura||0,freezeRange:d.freezeRange||0,freezeDuration:d.freezeDuration||0,
+    regen:d.regen||0,speedAura:d.speedAura||0,auraRange:d.auraRange||0,freezeRange:d.freezeRange||0,freezeDuration:d.freezeDuration||0,
     freezeRate:d.freezeRate||0,heartReward:d.heartReward||0,special:!!d.special,
     boss:false,lane,slowUntil:0,slowFactor:1,curseUntil:0,poisonUntil:0,poisonDps:0,spawned:false};
 }
@@ -505,7 +533,11 @@ function updateEnemy(e,dt){
   const path=enemyPath(e), target=path[e.pathIndex];
   if(!target)return;
   const dx=target[0]-e.x,dy=target[1]-e.y,d=Math.hypot(dx,dy);
-  const supportBoost=state.enemies.some(o=>o!==e&&!o.dead&&o.speedAura&&dist(o,e)<105)?1.16:1;
+  const support=state.enemies
+    .filter(o=>o!==e&&!o.dead&&o.speedAura&&o.lane===e.lane&&dist(o,e)<(o.auraRange||105))
+    .sort((a,b)=>dist(a,e)-dist(b,e))[0];
+  const supportBoost=support?support.speedAura:1;
+  e.speedBoosted=!!support;
   const move=e.speed*e.slowFactor*supportBoost*dt;
   if(move>=d){
     e.x=target[0];e.y=target[1];e.pathIndex++;
@@ -698,7 +730,7 @@ function completeWaveCheck(){
 function showLevelComplete(){
   ui.modal.classList.add("visible");
   ui.modal.innerHTML=`<div class="modal-card"><div class="sigil">✓</div><p class="eyebrow">REALM SECURED</p><h2>${LEVELS[state.level].name}</h2><p>The rift guardian has fallen. Your surviving champions have been recalled, and the next battlefield awaits.</p><div class="mini-rules"><span>Clear bonus <b>✦</b> ${180+state.level*50}</span><span>Core restored <b>♥</b> +7</span></div><button id="nextLevel" class="primary large">TRAVEL TO ${LEVELS[state.level+1].name.toUpperCase()}</button></div>`;
-  $("nextLevel").onclick=()=>{state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.selectedTower=null;state.selectedType=null;ui.modal.classList.remove("visible");updateSelection();updateUI();};
+  $("nextLevel").onclick=()=>{state.shards+=180+state.level*50;state.lives=Math.min(22,state.lives+7);state.level++;state.wave=0;state.towers=[];state.enemies=[];state.projectiles=[];state.areas=[];state.beams=[];state.selectedTower=null;state.selectedType=null;resetCamera();ui.modal.classList.remove("visible");updateSelection();updateUI();};
 }
 
 function showEnd(win){
@@ -712,13 +744,14 @@ function toast(msg){
 }
 
 canvas.addEventListener("mousemove",e=>{
-  const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*scaleX(),y=(e.clientY-r.top)*scaleY();
+  const {x,y}=screenToWorld(e.clientX,e.clientY);
   state.hoveredPad=LEVELS[state.level].pads.findIndex(p=>Math.hypot(x-p[0],y-p[1])<28);
 });
 canvas.addEventListener("mouseleave",()=>state.hoveredPad=-1);
 canvas.addEventListener("click",e=>{
+  if(performance.now()<state.suppressClickUntil)return;
   if(!state.started)return;
-  const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*scaleX(),y=(e.clientY-r.top)*scaleY();
+  const {x,y}=screenToWorld(e.clientX,e.clientY);
   const clicked=state.towers.find(t=>Math.hypot(x-t.x,y-t.y)<36);
   if(clicked){clicked.selectedAt=performance.now();state.selectedTower=clicked;state.selectedType=null;updateSelection();updateUI();return;}
   const padIndex=LEVELS[state.level].pads.findIndex(p=>Math.hypot(x-p[0],y-p[1])<30);
@@ -729,6 +762,61 @@ canvas.addEventListener("click",e=>{
   const tw={x:p[0],y:p[1],pad:padIndex,type:type.id,level:1,cooldown:.2,angle:-Math.PI/2,thornCooldown:.4,thornPulse:0,targetMode:type.snipe?"weak":"first"};
   state.towers.push(tw);state.selectedTower=tw;state.selectedType=null;burst(tw.x,tw.y,type.color,14);updateSelection();updateUI();
 });
+
+ui.zoomIn.onclick=()=>setZoom(state.camera.zoom+.25);
+ui.zoomOut.onclick=()=>setZoom(state.camera.zoom-.25);
+ui.zoomReset.onclick=resetCamera;
+canvas.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const p=screenToWorld(e.clientX,e.clientY);
+  setZoom(state.camera.zoom*(e.deltaY<0?1.12:.89),p.rawX,p.rawY);
+},{passive:false});
+canvas.addEventListener("dblclick",e=>{e.preventDefault();resetCamera();});
+
+function touchPoints(){return [...state.touches.values()];}
+function beginTouchGesture(){
+  const points=touchPoints();
+  if(points.length===1){
+    state.gesture={type:"pan",lastX:points[0].x,lastY:points[0].y,moved:false};
+  }else if(points.length>=2){
+    const a=points[0],b=points[1],midX=(a.x+b.x)/2,midY=(a.y+b.y)/2;
+    const anchor=screenToWorld(midX,midY);
+    state.gesture={type:"pinch",startDistance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),startZoom:state.camera.zoom,anchorX:anchor.x,anchorY:anchor.y};
+  }
+}
+canvas.addEventListener("pointerdown",e=>{
+  if(e.pointerType!=="touch")return;
+  canvas.setPointerCapture(e.pointerId);
+  state.touches.set(e.pointerId,{x:e.clientX,y:e.clientY});beginTouchGesture();
+});
+canvas.addEventListener("pointermove",e=>{
+  if(e.pointerType!=="touch"||!state.touches.has(e.pointerId))return;
+  state.touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const points=touchPoints(),g=state.gesture;
+  if(points.length>=2&&g?.type==="pinch"){
+    const a=points[0],b=points[1],rect=canvas.getBoundingClientRect();
+    const distance=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
+    const zoom=Math.max(1,Math.min(2.6,g.startZoom*distance/g.startDistance));
+    const rawX=(((a.x+b.x)/2)-rect.left)*scaleX(),rawY=(((a.y+b.y)/2)-rect.top)*scaleY();
+    const cx=canvas.width/2,cy=canvas.height/2;
+    state.camera.zoom=zoom;
+    state.camera.panX=rawX-cx-(g.anchorX-cx)*zoom;
+    state.camera.panY=rawY-cy-(g.anchorY-cy)*zoom;
+    clampCamera();state.suppressClickUntil=performance.now()+450;positionTowerPopover();
+  }else if(points.length===1&&g?.type==="pan"&&state.camera.zoom>1){
+    const p=points[0],dx=(p.x-g.lastX)*scaleX(),dy=(p.y-g.lastY)*scaleY();
+    state.camera.panX+=dx;state.camera.panY+=dy;g.lastX=p.x;g.lastY=p.y;
+    if(Math.abs(dx)+Math.abs(dy)>1)g.moved=true;
+    clampCamera();if(g.moved)state.suppressClickUntil=performance.now()+350;positionTowerPopover();
+  }
+},{passive:false});
+function endTouch(e){
+  if(e.pointerType!=="touch")return;
+  state.touches.delete(e.pointerId);
+  if(state.touches.size)beginTouchGesture();else state.gesture=null;
+}
+canvas.addEventListener("pointerup",endTouch);
+canvas.addEventListener("pointercancel",endTouch);
 
 ui.speed.onclick=()=>{
   state.speed=state.speed===1?2:state.speed===2?3:1;ui.speed.textContent=state.speed+"×";
@@ -846,6 +934,11 @@ function drawTower(tw){
 }
 function drawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
+  if(e.speedAura){
+    const pulse=1+Math.sin(state.time*5)*.05;
+    ctx.globalAlpha=.18;ctx.fillStyle="#f3c36a";ctx.beginPath();ctx.arc(0,0,(e.auraRange||105)*pulse,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.52;ctx.strokeStyle="#f3c36a";ctx.setLineDash([5,7]);ctx.beginPath();ctx.arc(0,0,(e.auraRange||105)*pulse,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+  }
   if(e.boss){ctx.shadowColor="#e14f50";ctx.shadowBlur=20;}
   const portraitW=e.radius*1.75,portraitH=e.radius*2.25;
   ctx.fillStyle=e.boss?"#2b1015":e.color;ctx.strokeStyle=e.curseUntil>state.time?"#cc72eb":"rgba(235,220,180,.8)";ctx.lineWidth=e.boss?3:1.5;
@@ -871,6 +964,10 @@ function drawEnemy(e){
   ctx.restore();
   if(!e.boss){const w=portraitW;ctx.fillStyle="#191515";ctx.fillRect(e.x-w/2,e.y-portraitH/2-7,w,4);ctx.fillStyle=e.hp/e.maxHp>.5?"#73c477":"#e26055";ctx.fillRect(e.x-w/2,e.y-portraitH/2-7,w*Math.max(0,e.hp/e.maxHp),4);}
   if(e.slowFactor<1){ctx.strokeStyle="#65d8ee";ctx.beginPath();ctx.arc(e.x,e.y,e.radius+4,0,Math.PI*2);ctx.stroke();}
+  if(e.speedBoosted){
+    ctx.strokeStyle="#f3c36a";ctx.lineWidth=2;
+    for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(e.x-e.radius-5-i*5,e.y-5+i*5);ctx.lineTo(e.x-e.radius-12-i*5,e.y-5+i*5);ctx.stroke();}
+  }
 }
 const BOSS_IMAGES={};
 function bossImage(e){
@@ -945,6 +1042,9 @@ function loop(now){
   }
   ctx.save();
   if(state.shake>0){ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);state.shake*=.88;if(state.shake<.3)state.shake=0;}
+  ctx.translate(canvas.width/2+state.camera.panX,canvas.height/2+state.camera.panY);
+  ctx.scale(state.camera.zoom,state.camera.zoom);
+  ctx.translate(-canvas.width/2,-canvas.height/2);
   drawMap();state.areas.forEach(drawArea);state.towers.forEach(drawTower);state.enemies.forEach(drawEnemy);state.beams.forEach(drawBeam);state.projectiles.forEach(drawProjectile);state.particles.forEach(drawParticle);state.floaters.forEach(drawFloater);ctx.restore();
   requestAnimationFrame(loop);
 }

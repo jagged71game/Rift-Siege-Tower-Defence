@@ -77,7 +77,23 @@ main.side-collapsed { grid-template-columns: minmax(720px, 1fr) 0; }
 }
 .primary:disabled { filter: grayscale(1); opacity: .55; cursor: default; }
 .board-wrap { position: relative; min-height: 300px; flex: 1; background: #171c1c; overflow: hidden; }
-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.map-controls {
+  position:absolute; z-index:6; left:10px; top:10px; display:flex; gap:4px;
+  padding:4px; border:1px solid rgba(226,194,121,.22); border-radius:6px;
+  background:rgba(9,14,19,.82); backdrop-filter:blur(5px);
+}
+.map-controls button {
+  width:30px; height:30px; padding:0; border:1px solid rgba(226,194,121,.25);
+  border-radius:3px; background:#17212a; color:#eacb78; font-size:17px; font-weight:800;
+}
+.zoom-hint {
+  position:absolute; z-index:5; left:50%; bottom:88px; transform:translateX(-50%);
+  padding:5px 9px; opacity:0; pointer-events:none; border-radius:4px;
+  background:rgba(7,11,15,.78); color:#b9ad92; font-size:7px; letter-spacing:.12em;
+  transition:opacity .25s;
+}
+.zoom-hint.visible { opacity:1; }
 .toast {
   position: absolute; top: 18px; left: 50%; transform: translate(-50%, -20px); opacity: 0;
   padding: 9px 16px; border: 1px solid rgba(240,184,73,.4); border-radius: 3px;
@@ -444,10 +460,16 @@ main.side-collapsed .side-toggle {
   .dossier-matchups b { padding: 6px; }
   .dossier-stats { padding-top: 7px; }
   .dossier-stats b { font-size: 12px; }
-  .summon-dock { bottom: max(5px, env(safe-area-inset-bottom)); padding: 4px; }
+  .summon-dock {
+    position:fixed; z-index:25; left:50%; bottom:max(8px, env(safe-area-inset-bottom));
+    padding:4px; transform:translateX(-50%);
+  }
   .summon-dock .tower-card { min-width: 49px; width: 49px; height: 57px; }
   .summon-dock .card-art { height: 51px; }
   .tower-popover { width: 220px; padding: 9px; }
+  .map-controls { position:fixed; z-index:24; left:max(6px, env(safe-area-inset-left)); top:54px; }
+  .map-controls button { width:28px; height:28px; }
+  .zoom-hint { position:fixed; bottom:76px; }
 }
 
 @media (max-width: 620px) and (orientation: portrait) {

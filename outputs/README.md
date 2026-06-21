@@ -26,6 +26,8 @@ Open `index.html` in a modern desktop browser.
 - Use the speed button in the top-right to cycle between 1×, 2×, and 3×.
 - Pause with the `Ⅱ` button or Space. Press `T` to cycle the selected tower's targeting.
 - Use the full-screen button for edge-to-edge play. Supported mobile browsers will also request landscape orientation.
+- On mobile, pinch the battlefield to zoom and drag it to pan. Use the `+`, `−`, and reset controls to adjust the view precisely.
+- The compact summon icons remain fixed above the safe area in fullscreen landscape, including on notched phones.
 
 Completing a wave without losing Core grants an escalating Flawless streak bonus. Taking damage resets the streak.
 
@@ -92,6 +94,8 @@ Enemy portraits display `W:` for their elemental weakness and `R:` for their res
 Later campaign levels introduce Forgotten One, Goblin Psychic, Soul Strangler, and Supply Runner. These add fire immunity, regeneration, ethereal speed, and enemy speed auras.
 
 River Hellondale enters later campaigns as a Frost Mage. Every 5.8 seconds it freezes the nearest tower within 175 range for 2.4 seconds. Frozen towers cannot attack or trigger thorns; the ice shell displays the remaining duration.
+
+Supply Runner now projects a visible 155-range same-lane aura that accelerates allies by 22%. Boosted units display gold speed trails, while the Runner moves slowly enough to remain with its pack.
 
 **Yaba's Pickle** has a 22% chance to wander into non-boss waves from wave two onward. Defeating this rare special enemy restores 3 Core.
 

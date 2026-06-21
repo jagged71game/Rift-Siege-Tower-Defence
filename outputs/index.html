@@ -43,6 +43,12 @@
 
         <div class="board-wrap">
           <canvas id="gameCanvas" width="1100" height="620"></canvas>
+          <div class="map-controls" aria-label="Map zoom controls">
+            <button id="zoomInBtn" title="Zoom in">+</button>
+            <button id="zoomOutBtn" title="Zoom out">−</button>
+            <button id="zoomResetBtn" title="Reset map view">⌖</button>
+          </div>
+          <div id="zoomHint" class="zoom-hint">PINCH TO ZOOM · DRAG TO PAN</div>
           <div class="pause-screen">RIFT PAUSED</div>
           <div id="toast" class="toast"></div>
           <div id="bossBar" class="boss-bar hidden">
